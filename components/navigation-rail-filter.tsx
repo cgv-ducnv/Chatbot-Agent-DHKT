@@ -531,7 +531,7 @@ export function NavigationRailFilter({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="flex items-center h-full z-[10] -translate-y-[10%]"
+            className="flex items-center h-full z-[10] -translate-y-[25%]"
           >
             <VerticalDock magnification={56} distance={100} panelWidth={56}>
               {/* Main Filter Button */}
