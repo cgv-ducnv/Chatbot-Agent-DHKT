@@ -172,7 +172,7 @@ function RolesPageContent() {
           <AppBreadcrumb
             items={[
               {
-                label: "Home",
+                label: "Dashboard",
                 href: "/dashboard",
                 icon: <Home className="size-4" />,
               },

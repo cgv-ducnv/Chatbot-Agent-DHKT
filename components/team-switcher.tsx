@@ -17,13 +17,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "./ui/sidebar";
+import { StaticImageData } from "next/image";
 
 export function TeamSwitcher({
   teams,
 }: {
   teams: {
     name: string;
-    logo: React.ElementType;
+    logo: React.ElementType | StaticImageData;
     plan: string;
   }[];
 }) {
@@ -41,10 +42,18 @@ export function TeamSwitcher({
               className="group/team relative overflow-hidden data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               {/* Gradient Logo Container */}
-              <div className="relative flex aspect-square size-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-fuchsia-500 shadow-md shadow-violet-500/20 transition-transform group-hover/team:scale-105">
-                <activeTeam.logo className="size-4 text-white" />
+              <div className="relative flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-violet-500/20 transition-transform group-hover/team:scale-105">
+                {typeof activeTeam.logo === "function" ? (
+                  <activeTeam.logo className="size-4" />
+                ) : (
+                  <img
+                    src={(activeTeam.logo as any).src}
+                    alt={activeTeam.name}
+                    className="size-full object-cover rounded-lg"
+                  />
+                )}
                 {/* Shine effect */}
-                <div className="absolute inset-0 rounded-lg bg-linear-to-br from-white/20 to-transparent" />
+                <div className="absolute inset-0 rounded-lg bg-linear-to-br from-white/20 to-transparent pointer-events-none" />
               </div>
 
               {!isCollapsed && (
@@ -77,8 +86,16 @@ export function TeamSwitcher({
                 onClick={() => setActiveTeam(team)}
                 className="gap-3 p-2.5 cursor-pointer rounded-lg transition-colors"
               >
-                <div className="flex size-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
-                  <team.logo className="size-4 text-violet-600 dark:text-violet-400" />
+                <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary/10 border border-sidebar-primary/20">
+                  {typeof team.logo === "function" ? (
+                    <team.logo className="size-4 text-sidebar-primary" />
+                  ) : (
+                    <img
+                      src={(team.logo as any).src}
+                      alt={team.name}
+                      className="size-full object-cover rounded-lg"
+                    />
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">{team.name}</div>

@@ -33,7 +33,7 @@ import { GroupUserDetail } from "./group-user-detail";
 
 interface DataTableProps {
   groups: Group[];
-  onDeleteGroup: (id: string) => void;
+  onDeleteGroup: (id: number) => void;
   onEditGroup: (group: Group) => void;
   totalPages: number;
   totalRecords: number;
@@ -116,17 +116,8 @@ export function GroupDataTable({
     }
   };
 
-  const getStatusColor = (isActive: number) => {
-    return isActive === 1
-      ? "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20"
-      : "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20";
-  };
-
   // Define minimal columns even if valid rendering is custom, for state management of sorting/filtering if needed
-  const columns: any[] = [
-    { accessorKey: "name" },
-    { accessorKey: "is_active" },
-  ];
+  const columns: any[] = [{ accessorKey: "name" }];
 
   const table = useReactTable({
     data: groups,
@@ -168,99 +159,119 @@ export function GroupDataTable({
         departmentId={departmentId}
       />
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, index) => (
-            <Card key={index} className="p-4">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-5 w-[200px]" />
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 w-8" />
-                    <Skeleton className="h-8 w-8" />
-                  </div>
+          Array.from({ length: 8 }).map((_, index) => (
+            <Card
+              key={index}
+              className="flex flex-col justify-between p-4 h-[140px]"
+            >
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <Skeleton className="h-5 w-[60%]" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+              </div>
+              <div className="flex justify-between items-center mt-4 pt-3 border-t">
+                <Skeleton className="h-4 w-12" />
+                <div className="flex gap-1">
+                  <Skeleton className="h-7 w-7 rounded-full" />
+                  <Skeleton className="h-7 w-7 rounded-full" />
+                  <Skeleton className="h-7 w-7 rounded-full" />
                 </div>
               </div>
             </Card>
           ))
         ) : groups.length > 0 ? (
           groups.map((group) => (
-            <Card key={group.id} className="p-4 transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-base">
-                      {group.name}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="h-5 px-1.5 gap-1 font-medium text-[10px] text-muted-foreground border-muted-foreground/20"
-                    >
-                      <Users className="size-3" />
-                      {group.member_count || 0}
-                    </Badge>
+            <Card
+              key={group.id}
+              className="group flex flex-col justify-between p-4 transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden"
+            >
+              <div className="space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3
+                        className="font-semibold text-sm truncate"
+                        title={group.name}
+                      >
+                        {group.name}
+                      </h3>
+                    </div>
                   </div>
-                  {group.description && (
-                    <span className="text-sm text-muted-foreground line-clamp-1">
-                      {group.description}
-                    </span>
-                  )}
-                </div>
 
-                <div className="flex items-center gap-3 md:gap-6">
                   <Badge
-                    variant="secondary"
-                    className={getStatusColor(group.is_active || 0)}
+                    variant="outline"
+                    className="shrink-0 h-6 px-2 gap-1.5 font-medium text-xs text-muted-foreground bg-muted/30"
                   >
-                    {group.is_active === 1 ? "Hoạt động" : "Không hoạt động"}
+                    <Users className="size-3.5" />
+                    {group.member_count || 0}
                   </Badge>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (onEditGroup) onEditGroup(group);
-                      }}
-                    >
-                      <Pencil className="size-4" />
-                      <span className="sr-only">Sửa</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedGroup(group);
-                        setUserDetailOpen(true);
-                      }}
-                    >
-                      <Expand className="size-4" />
-                      <span className="sr-only">Mở rộng</span>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                      onClick={() => onDeleteGroup(group.id)}
-                    >
-                      <Trash2 className="size-4" />
-                      <span className="sr-only">Xóa</span>
-                    </Button>
-                  </div>
                 </div>
+
+                {group.description ? (
+                  <p
+                    className="text-xs text-muted-foreground line-clamp-2 min-h-[2.5em]"
+                    title={group.description}
+                  >
+                    {group.description}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic opacity-50 min-h-[2.5em]">
+                    Chưa có mô tả
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-border/50">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  title="Sửa nhóm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onEditGroup) onEditGroup(group);
+                  }}
+                >
+                  <Pencil className="size-3.5" />
+                  <span className="sr-only">Sửa</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  title="Chi tiết thành viên"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedGroup(group);
+                    setUserDetailOpen(true);
+                  }}
+                >
+                  <Expand className="size-3.5" />
+                  <span className="sr-only">Mở rộng</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  title="Xóa nhóm"
+                  onClick={() => onDeleteGroup(group.id)}
+                >
+                  <Trash2 className="size-3.5" />
+                  <span className="sr-only">Xóa</span>
+                </Button>
               </div>
             </Card>
           ))
         ) : (
-          <div className="min-h-[200px] flex items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
+          <div className="col-span-full min-h-[300px] flex items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
             <EmptyData
               icon={IconMoodEmpty}
               title="Dữ liệu nhóm trống."

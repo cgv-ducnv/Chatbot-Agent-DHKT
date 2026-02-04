@@ -47,7 +47,7 @@ export const GroupUserDetail = ({
   onOpenChange,
 }: GroupUserDetailProps) => {
   const { data: groupDetail, isLoading } = useGetGroups({
-    id: group?.id as string,
+    id: group?.id,
   });
 
   const detail = groupDetail as any;

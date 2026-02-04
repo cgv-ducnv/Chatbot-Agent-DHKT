@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { tweakcnThemes } from "@/config/theme-data";
 import { useSidebarConfig } from "@/contexts/sidebar-context";
+import { useThemeColor } from "@/contexts/theme-color-context";
 import { useThemeManager } from "@/hooks/use-theme-manager";
 import type { ImportedTheme } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,8 @@ import { Layout, Palette, RotateCcw, Settings, X } from "lucide-react";
 import React from "react";
 import { LayoutTab } from "./layout-tab";
 import { ThemeTab } from "./theme-tab";
+
+// ... (other imports)
 
 interface ThemeCustomizerProps {
   open: boolean;
@@ -38,9 +41,17 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   const { config: sidebarConfig, updateConfig: updateSidebarConfig } =
     useSidebarConfig();
 
+  const {
+    selectedTheme,
+    setSelectedTheme,
+    selectedTweakcnTheme,
+    setSelectedTweakcnTheme,
+  } = useThemeColor();
+
   const [activeTab, setActiveTab] = React.useState("theme");
-  const [selectedTheme, setSelectedTheme] = React.useState("default");
-  const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState("");
+  // const [selectedTheme, setSelectedTheme] = React.useState("");
+  // const [selectedTweakcnTheme, setSelectedTweakcnTheme] =
+  //   React.useState("modern-minimal");
   const [selectedRadius, setSelectedRadius] = React.useState("0.5rem");
   const [importModalOpen, setImportModalOpen] = React.useState(false);
   const [importedTheme, setImportedTheme] =
@@ -50,8 +61,8 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
     // Complete reset to application defaults
 
     // 1. Reset all state variables to initial values
-    setSelectedTheme("default");
-    setSelectedTweakcnTheme("");
+    setSelectedTheme("");
+    setSelectedTweakcnTheme("modern-minimal");
     setSelectedRadius("0.5rem");
     setImportedTheme(null); // Clear imported theme
     setBrandColorsValues({}); // Clear brand colors state

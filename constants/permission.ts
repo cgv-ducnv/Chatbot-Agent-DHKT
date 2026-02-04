@@ -109,6 +109,29 @@ export const PERMISSIONS = {
 
   // Logs
   VIEW_LOGS: "view_logs",
+
+  // Faqs
+  VIEW_FAQS: "view_faqs",
+  VIEW_FAQ_BY_ID: "view_faq_by_id",
+  CREATE_FAQ: "create_faq",
+  EDIT_FAQ: "edit_faq",
+  DELETE_FAQ: "delete_faq",
+  SEARCH_FAQS: "search_faqs",
+  IMPORT_FAQS: "import_faqs",
+
+  // AI Configs
+  VIEW_AI_CONFIGS: "view_ai_configs",
+  VIEW_AI_CONFIG_BY_ID: "view_ai_config_by_id",
+  CREATE_AI_CONFIG: "create_ai_config",
+  EDIT_AI_CONFIG: "edit_ai_config",
+  DELETE_AI_CONFIG: "delete_ai_config",
+
+  // Sources
+  VIEW_SOURCES: "view_sources",
+  VIEW_SOURCE_BY_ID: "view_source_by_id",
+  CREATE_SOURCE: "create_source",
+  EDIT_SOURCE: "edit_source",
+  DELETE_SOURCE: "delete_source",
 } as const;
 
 /**

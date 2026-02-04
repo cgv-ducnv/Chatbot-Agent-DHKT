@@ -1,7 +1,7 @@
 import apiClient from "@/lib/api-client";
 
 export interface GroupFormValues {
-  id?: string;
+  id?: number | string;
   name: string;
   description?: string;
   tenant_id?: string;
@@ -30,6 +30,6 @@ export async function updateGroupApi(data: GroupFormValues) {
   return await apiClient.put<UpdateGroupResponse>(`/groups/${data.id}`, data);
 }
 
-export async function deleteGroupApi(id: string) {
+export async function deleteGroupApi(id: number | string) {
   return await apiClient.delete(`/groups/${id}`);
 }

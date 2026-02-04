@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
 import { FontProvider } from "@/contexts/font-context";
 import { SocketProvider } from "@/contexts/socket-context";
+import { ThemeColorProvider } from "@/contexts/theme-color-context";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Manrope } from "next/font/google";
 import NextToploader from "nextjs-toploader";
@@ -79,8 +80,10 @@ export default function RootLayout({
             <QueryProvider>
               <AuthProvider>
                 <SocketProvider>
-                  {children}
-                  <Toaster richColors />
+                  <ThemeColorProvider>
+                    {children}
+                    <Toaster richColors />
+                  </ThemeColorProvider>
                 </SocketProvider>
               </AuthProvider>
             </QueryProvider>

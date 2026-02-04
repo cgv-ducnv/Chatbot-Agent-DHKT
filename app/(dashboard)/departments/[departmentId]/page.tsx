@@ -3,7 +3,6 @@
 import { use, useState, useEffect } from "react";
 import { DepartmentDetailCard } from "@/features/departments/components/department-detail-card";
 import { useGetDepartmentDetail } from "@/hooks/department/use-get-department";
-import { useGetTenants } from "@/hooks/tenant/use-get-tenant";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GroupDataTable } from "@/features/groups/components/group-data-table";
 import { useDeleteGroup } from "@/hooks/group/use-action-group";
@@ -108,7 +107,6 @@ function DepartmentDetailPageContent({
     const fullGroup = {
       ...group,
       department_id: group.department_id || department?.id || "",
-      tenant_id: group.tenant_id || department?.tenant_id || "",
     };
     setEditingGroup(fullGroup);
     setEditDialogOpen(true);
@@ -122,7 +120,7 @@ function DepartmentDetailPageContent({
   };
 
   // Handle Delete
-  const handleDeleteGroup = (id: string) => {
+  const handleDeleteGroup = (id: number) => {
     const group = department?.groups?.find((g: any) => g.id === id);
     if (group) {
       // @ts-ignore
@@ -160,19 +158,7 @@ function DepartmentDetailPageContent({
     }));
   };
 
-  // Get dữ liệu từ tennant
-  const { data: tenant, isLoading: isLoadingTenant } = useGetTenants(
-    {
-      id: department?.tenant_id,
-    },
-    {
-      enabled: !!department?.tenant_id,
-    },
-  );
-
-  const tenantName = tenant && "name" in tenant ? tenant.name : "";
-
-  if (isLoading || isLoadingTenant) {
+  if (isLoading) {
     return <Skeleton className="h-6 w-24" />;
   }
 
@@ -204,7 +190,11 @@ function DepartmentDetailPageContent({
         <div className="@container/main px-4 py-4 lg:px-6 space-y-6">
           <AppBreadcrumb
             items={[
-              { label: "Home", href: "/", icon: <Home className="size-4" /> },
+              {
+                label: "Dashboard",
+                href: "/",
+                icon: <Home className="size-4" />,
+              },
               {
                 label: "Phòng ban",
                 href: "/departments",

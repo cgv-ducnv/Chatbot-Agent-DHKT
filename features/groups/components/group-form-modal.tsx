@@ -36,7 +36,6 @@ import {
   type GroupFormValues,
 } from "../utils/schema";
 import { useCreateGroup, useUpdateGroup } from "@/hooks/group/use-action-group";
-import { useMe } from "@/hooks/user/use-me";
 import type { Group } from "../utils/schema";
 import { removeEmptyFields } from "@/utils/remove-field-empty";
 
@@ -64,49 +63,43 @@ export function GroupFormDialog({
   const createGroupMutation = useCreateGroup();
   const updateGroupMutation = useUpdateGroup();
 
-  // Lấy thông tin user hiện tại để get tenant_id
-  const { data: currentUser, isLoading: isLoadingUser } = useMe();
-
   const form = useForm<GroupFormValues>({
-    resolver: zodResolver(groupFormSchema),
+    resolver: zodResolver(groupFormSchema) as any,
     defaultValues: groupDefaultValues,
   });
 
-  // Auto-populate tenant_id từ current user
+  // Auto-populate department_id
   useEffect(() => {
     if (group && open) {
       const formData = {
-        id: group.id,
-        name: group.name,
-        description: group.description,
-        tenant_id: group.tenant_id,
-        is_active: group.is_active,
-        department_id: group.department_id,
+        id: String(group.id),
+        name: String(group.name || ""),
+        description: String(group.description || ""),
+        department_id: Number(group.department_id),
       };
-      form.reset(formData);
+      form.reset(formData as unknown as GroupFormValues);
     } else if (!group && open) {
       // Reset về default values khi tạo mới
       form.reset({
         ...groupDefaultValues,
-        department_id: departmentId || "",
-        tenant_id: currentUser?.tenant_id || "",
-      });
+        department_id: departmentId ? Number(departmentId) : 0,
+      } as unknown as GroupFormValues);
     }
-  }, [group, open, form, currentUser, departmentId]);
+  }, [group, open, form, departmentId]);
 
   function onSubmit(data: GroupFormValues) {
-    let payload = removeEmptyFields(data);
+    let payload: any = removeEmptyFields(data);
 
     if (isEditMode && group) {
-      payload = { ...payload, id: group.id };
-      updateGroupMutation.mutate(payload as GroupFormValues, {
+      payload = { ...payload, id: Number(group.id) };
+      updateGroupMutation.mutate(payload, {
         onSuccess: () => {
           form.reset();
           setOpen(false);
         },
       });
     } else {
-      createGroupMutation.mutate(payload as GroupFormValues, {
+      createGroupMutation.mutate(payload, {
         onSuccess: () => {
           form.reset();
           setOpen(false);
@@ -137,6 +130,19 @@ export function GroupFormDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Hidden field for department_id to ensure it is registered */}
+            <FormField
+              control={form.control}
+              name="department_id"
+              render={({ field }) => (
+                <FormItem className="hidden">
+                  <FormControl>
+                    <Input type="hidden" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 gap-4">
               {/* Tên vai trò */}
               <FormField
@@ -184,7 +190,7 @@ export function GroupFormDialog({
                     ? "Đang cập nhật..."
                     : "Cập nhật nhóm"
                   : createGroupMutation.isPending
-                    ? "Đang lưu..."
+                    ? "Đang tạo nhóm..."
                     : "Lưu nhóm"}
               </Button>
             </DialogFooter>

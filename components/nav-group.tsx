@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useThemeColor } from "@/contexts/theme-color-context";
 import { NavCollapsible, NavItem, NavLink, type NavGroup } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
@@ -38,7 +39,7 @@ export function NavGroup({ title, items }: NavGroup) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+      <SidebarGroupLabel className="text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70">
         {title}
       </SidebarGroupLabel>
       <SidebarMenu className="gap-1">
@@ -73,8 +74,13 @@ const NavBadge = ({
   children: ReactNode;
   color?: "violet" | "green";
 }) => {
-  const colorClasses =
-    color === "green"
+  const { selectedTweakcnTheme } = useThemeColor();
+
+  const isModernMinimal = selectedTweakcnTheme === "modern-minimal";
+
+  const colorClasses = isModernMinimal
+    ? "bg-green-500 text-white ring-2 ring-green-400/50 shadow-lg shadow-green-400/40"
+    : color === "green"
       ? "bg-green-500/10 text-green-600 dark:text-green-400"
       : "bg-violet-500/10 text-violet-600 dark:text-violet-400";
 
@@ -89,7 +95,10 @@ const NavBadge = ({
 
 const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
   const { setOpenMobile } = useSidebar();
+  const { selectedTweakcnTheme } = useThemeColor();
   const isActive = checkIsActive(href, item);
+
+  const isModernMinimal = selectedTweakcnTheme === "modern-minimal";
 
   return (
     <SidebarMenuItem>
@@ -99,21 +108,35 @@ const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
         tooltip={item.title}
         className={cn(
           "group/link relative transition-all duration-200",
-          isActive && "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+          isActive &&
+            (isModernMinimal
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "bg-violet-500/10 text-violet-600 dark:text-violet-400"),
         )}
       >
         <Link href={item.url} onClick={() => setOpenMobile(false)}>
           {/* Active indicator */}
           {isActive && (
-            <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-linear-to-b from-violet-500 to-fuchsia-500" />
+            <div
+              className={cn(
+                "absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full",
+                isModernMinimal
+                  ? "bg-sidebar-primary"
+                  : "bg-linear-to-b from-violet-500 to-fuchsia-500",
+              )}
+            />
           )}
           {item.icon && (
             <item.icon
               className={cn(
                 "transition-colors",
                 isActive
-                  ? "text-violet-600 dark:text-violet-400"
-                  : "text-muted-foreground group-hover/link:text-foreground",
+                  ? isModernMinimal
+                    ? "text-sidebar-accent-foreground"
+                    : "text-violet-600 dark:text-violet-400"
+                  : isModernMinimal
+                    ? "text-sidebar-foreground/70 group-hover/link:text-sidebar-foreground"
+                    : "text-muted-foreground group-hover/link:text-foreground",
               )}
             />
           )}
@@ -135,7 +158,10 @@ const SidebarMenuCollapsible = ({
   href: string;
 }) => {
   const { setOpenMobile } = useSidebar();
+  const { selectedTweakcnTheme } = useThemeColor();
   const isActive = checkIsActive(href, item, true);
+
+  const isModernMinimal = selectedTweakcnTheme === "modern-minimal";
 
   return (
     <Collapsible asChild defaultOpen={isActive} className="group/collapsible">
@@ -145,7 +171,10 @@ const SidebarMenuCollapsible = ({
             tooltip={item.title}
             className={cn(
               "group/link transition-all duration-200",
-              isActive && "text-violet-600 dark:text-violet-400",
+              isActive &&
+                (isModernMinimal
+                  ? "text-sidebar-accent-foreground"
+                  : "text-violet-600 dark:text-violet-400"),
             )}
           >
             {item.icon && (
@@ -153,8 +182,12 @@ const SidebarMenuCollapsible = ({
                 className={cn(
                   "transition-colors",
                   isActive
-                    ? "text-violet-600 dark:text-violet-400"
-                    : "text-muted-foreground group-hover/link:text-foreground",
+                    ? isModernMinimal
+                      ? "text-sidebar-accent-foreground"
+                      : "text-violet-600 dark:text-violet-400"
+                    : isModernMinimal
+                      ? "text-sidebar-foreground/70 group-hover/link:text-sidebar-foreground"
+                      : "text-muted-foreground group-hover/link:text-foreground",
                 )}
               />
             )}
@@ -166,7 +199,7 @@ const SidebarMenuCollapsible = ({
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent className="CollapsibleContent">
-          <SidebarMenuSub className="border-l-2 border-violet-500/20 ml-3.5">
+          <SidebarMenuSub className="border-l-2 border-sidebar-border/50 ml-3.5">
             {item.items.map((subItem) => {
               const isSubActive = checkIsActive(href, subItem);
               return (
@@ -177,7 +210,9 @@ const SidebarMenuCollapsible = ({
                     className={cn(
                       "transition-all duration-200",
                       isSubActive &&
-                        "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                        (isModernMinimal
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "bg-violet-500/10 text-violet-600 dark:text-violet-400"),
                     )}
                   >
                     <Link
@@ -210,7 +245,10 @@ const SidebarMenuCollapsedDropdown = ({
   item: NavCollapsible;
   href: string;
 }) => {
+  const { selectedTweakcnTheme } = useThemeColor();
   const isActive = checkIsActive(href, item, true);
+
+  const isModernMinimal = selectedTweakcnTheme === "modern-minimal";
 
   return (
     <SidebarMenuItem>
@@ -221,14 +259,18 @@ const SidebarMenuCollapsedDropdown = ({
             className={cn(
               "transition-all duration-200",
               isActive &&
-                "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                (isModernMinimal
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "bg-violet-500/10 text-violet-600 dark:text-violet-400"),
             )}
           >
             {item.icon && (
               <item.icon
                 className={cn(
                   isActive
-                    ? "text-violet-600 dark:text-violet-400"
+                    ? isModernMinimal
+                      ? "text-sidebar-accent-foreground"
+                      : "text-violet-600 dark:text-violet-400"
                     : "text-muted-foreground",
                 )}
               />

@@ -28,12 +28,11 @@ export interface DepartmentDetailResponseApi {
     description: string;
     tenant_id: string;
     groups: {
-      id: string;
+      id: number;
       name: string;
       department_id: string;
       tenant_id: string;
       description: string;
-      is_active: number;
       member_count: number;
     }[];
   };

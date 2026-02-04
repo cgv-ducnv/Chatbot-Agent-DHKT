@@ -96,7 +96,7 @@ function TicketFlowStepsPageContent() {
               <AppBreadcrumb
                 items={[
                   {
-                    label: "Home",
+                    label: "Dashboard",
                     href: "/dashboard",
                     icon: <Home className="size-4" />,
                   },

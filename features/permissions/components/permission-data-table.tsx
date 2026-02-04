@@ -237,15 +237,9 @@ export default function PermissionsMatrix() {
       return;
     }
 
-    if (!currentUser?.tenant_id) {
-      console.error("No tenant_id available");
-      return;
-    }
-
     const payload = {
       role_id: selectedRole,
       permission_ids: Array.from(selectedPermissions),
-      tenant_id: currentUser.tenant_id,
     };
 
     assignRolePermissionMutation.mutate(payload, {
@@ -260,7 +254,7 @@ export default function PermissionsMatrix() {
       <AppBreadcrumb
         items={[
           {
-            label: "Home",
+            label: "Dashboard",
             href: "/dashboard",
             icon: <Home className="size-4" />,
           },

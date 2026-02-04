@@ -7,17 +7,28 @@ import {
   ChatMessage,
   ChatUser,
 } from "@/features/chats/utils/types";
+import { AppBreadcrumb } from "@/components/breadcrumb";
+import { Home } from "lucide-react";
+import { IconMessages } from "@tabler/icons-react";
 
 export default function ChatsPage() {
   return (
     <>
       <div className="px-4 py-4 lg:px-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Chats</h1>
-          <p className="text-muted-foreground">
-            Chat with your customers and team members.
-          </p>
-        </div>
+        <AppBreadcrumb
+          items={[
+            {
+              label: "Dashboard",
+              href: "/dashboard",
+              icon: <Home className="size-4" />,
+            },
+            {
+              label: "Cuộc trò chuyện",
+              href: "/chats",
+              icon: <IconMessages className="size-4" />,
+            },
+          ]}
+        />
       </div>
 
       <div className="@container/main px-4 lg:px-6 space-y-6">

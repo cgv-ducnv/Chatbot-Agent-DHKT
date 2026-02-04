@@ -1,4 +1,5 @@
 import { LinkProps } from "next/link";
+import { StaticImageData } from "next/image";
 
 interface User {
   id: string;
@@ -11,7 +12,7 @@ interface User {
 
 interface Team {
   name: string;
-  logo: React.ElementType;
+  logo: React.ElementType | StaticImageData;
   plan: string;
 }
 

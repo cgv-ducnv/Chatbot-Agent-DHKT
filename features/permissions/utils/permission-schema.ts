@@ -14,7 +14,7 @@ export const permissionDefaultValues = {
 
 export const permissionFormSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, "Tên vai trò không được để trống"),
+  name: z.string().min(1, "Tên quyền không được để trống"),
   description: z.string().optional(),
   belong_to: z.string().optional(),
 });

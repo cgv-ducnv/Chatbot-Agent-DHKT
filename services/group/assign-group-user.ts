@@ -3,13 +3,13 @@ import apiClient from "@/lib/api-client";
 export interface UserGroupRequest {
   items: {
     user_id: string;
-    group_id: string;
+    group_id: number;
   }[];
 }
 
 export interface UserGroupRemoveRequest {
   user_id: string;
-  group_id: string;
+  group_id: number;
 }
 
 export async function assignGroupUserApi(request: UserGroupRequest) {

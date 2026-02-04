@@ -7,7 +7,7 @@ export interface GroupResponseApi {
   message: string;
   data: {
     groups: {
-      id: string;
+      id: number;
       name: string;
       description: string;
       tenant_id: string;
@@ -20,7 +20,7 @@ export interface GroupResponseApi {
 }
 
 export interface GroupQueryParams {
-  id?: string;
+  id?: number;
   page?: number;
   page_size?: number;
   search?: string;

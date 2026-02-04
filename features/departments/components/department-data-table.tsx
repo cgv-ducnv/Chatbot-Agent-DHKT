@@ -196,7 +196,7 @@ export function DataTable({
             className="-ml-4 h-8 data-[state=open]:bg-accent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Tên vai trò
+            Tên phòng ban
             {column.getIsSorted() === "asc" ? (
               <ArrowUp className="ml-2 h-4 w-4" />
             ) : column.getIsSorted() === "desc" ? (
@@ -252,35 +252,35 @@ export function DataTable({
     //     </span>
     //   ),
     // },
-    {
-      accessorKey: "is_active",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Trạng thái
-            {column.getIsSorted() === "asc" ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : column.getIsSorted() === "desc" ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : (
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            )}
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const isActive = row.original.is_active;
-        return (
-          <Badge variant="secondary" className={getStatusColor(isActive)}>
-            {isActive === 1 ? "Hoạt động" : "Không hoạt động"}
-          </Badge>
-        );
-      },
-    },
+    // {
+    //   accessorKey: "is_active",
+    //   header: ({ column }) => {
+    //     return (
+    //       <Button
+    //         variant="ghost"
+    //         className="-ml-4 h-8 data-[state=open]:bg-accent"
+    //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    //       >
+    //         Trạng thái
+    //         {column.getIsSorted() === "asc" ? (
+    //           <ArrowUp className="ml-2 h-4 w-4" />
+    //         ) : column.getIsSorted() === "desc" ? (
+    //           <ArrowDown className="ml-2 h-4 w-4" />
+    //         ) : (
+    //           <ArrowUpDown className="ml-2 h-4 w-4" />
+    //         )}
+    //       </Button>
+    //     );
+    //   },
+    //   cell: ({ row }) => {
+    //     const isActive = row.original.is_active;
+    //     return (
+    //       <Badge variant="secondary" className={getStatusColor(isActive)}>
+    //         {isActive === 1 ? "Hoạt động" : "Không hoạt động"}
+    //       </Badge>
+    //     );
+    //   },
+    // },
     {
       id: "actions",
       enableSorting: false,

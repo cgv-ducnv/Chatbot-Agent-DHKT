@@ -60,77 +60,85 @@ import {
 } from "@/components/ui/command";
 
 // ============================================
-// VERTICAL DOCK COMPONENT (macOS-like effect)
+// DOCK COMPONENT (macOS-like effect)
 // ============================================
 
 const DEFAULT_MAGNIFICATION = 60;
-const DEFAULT_DISTANCE = 100;
-const DEFAULT_PANEL_WIDTH = 56;
+const DEFAULT_DISTANCE = 140;
+const DEFAULT_PANEL_SIZE = 56;
 
-interface VerticalDockContextType {
-  mouseY: MotionValue<number>;
+interface DockContextType {
+  mousePos: MotionValue<number>;
   spring: SpringOptions;
   magnification: number;
   distance: number;
+  orientation: "vertical" | "horizontal";
 }
 
-const VerticalDockContext = createContext<VerticalDockContextType | undefined>(
-  undefined,
-);
+const DockContext = createContext<DockContextType | undefined>(undefined);
 
-function useVerticalDock() {
-  const context = useContext(VerticalDockContext);
+function useDock() {
+  const context = useContext(DockContext);
   if (!context) {
-    throw new Error("useVerticalDock must be used within VerticalDockProvider");
+    throw new Error("useDock must be used within DockProvider");
   }
   return context;
 }
 
-interface VerticalDockProps {
+interface DockProps {
   children: ReactNode;
   className?: string;
   distance?: number;
-  panelWidth?: number;
+  panelSize?: number;
   magnification?: number;
   spring?: SpringOptions;
+  orientation?: "vertical" | "horizontal";
 }
 
-function VerticalDock({
+function Dock({
   children,
   className,
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
   magnification = DEFAULT_MAGNIFICATION,
   distance = DEFAULT_DISTANCE,
-  panelWidth = DEFAULT_PANEL_WIDTH,
-}: VerticalDockProps) {
-  const mouseY = useMotionValue(Number.POSITIVE_INFINITY);
+  panelSize = DEFAULT_PANEL_SIZE,
+  orientation = "vertical",
+}: DockProps) {
+  const mousePos = useMotionValue(Number.POSITIVE_INFINITY);
 
   return (
     <div
       className={cn(
-        "flex flex-col items-center h-fit gap-2 rounded-2xl bg-card/95 backdrop-blur-md border border-border/50 py-3 shadow-xl",
+        "flex items-center gap-2 rounded-2xl bg-card/95 backdrop-blur-md border border-border/50 shadow-xl z-20",
+        orientation === "vertical"
+          ? "flex-col h-fit py-3 w-[var(--panel-size)]"
+          : "flex-row w-fit px-3 h-[var(--panel-size)]",
         className,
       )}
-      style={{ width: panelWidth }}
+      style={
+        {
+          "--panel-size": `${panelSize}px`,
+        } as React.CSSProperties
+      }
       onMouseLeave={() => {
-        mouseY.set(Number.POSITIVE_INFINITY);
+        mousePos.set(Number.POSITIVE_INFINITY);
       }}
-      onMouseMove={({ pageY }) => {
-        mouseY.set(pageY);
+      onMouseMove={(e) => {
+        mousePos.set(orientation === "vertical" ? e.pageY : e.pageX);
       }}
       role="toolbar"
       aria-label="Filter dock"
     >
-      <VerticalDockContext.Provider
-        value={{ mouseY, spring, distance, magnification }}
+      <DockContext.Provider
+        value={{ mousePos, spring, distance, magnification, orientation }}
       >
         {children}
-      </VerticalDockContext.Provider>
+      </DockContext.Provider>
     </div>
   );
 }
 
-interface VerticalDockItemProps {
+interface DockItemProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
@@ -138,20 +146,27 @@ interface VerticalDockItemProps {
   badge?: number;
 }
 
-function VerticalDockItem({
+function DockItem({
   children,
   className,
   onClick,
   isActive,
   badge,
-}: VerticalDockItemProps) {
+}: DockItemProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const { distance, magnification, mouseY, spring } = useVerticalDock();
+  const { distance, magnification, mousePos, spring, orientation } = useDock();
   const isHovered = useMotionValue(0);
 
-  const mouseDistance = useTransform(mouseY, (val) => {
-    const domRect = ref.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
-    return val - domRect.y - domRect.height / 2;
+  const mouseDistance = useTransform(mousePos, (val) => {
+    const domRect = ref.current?.getBoundingClientRect() ?? {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    };
+    return orientation === "vertical"
+      ? val - domRect.y - domRect.height / 2
+      : val - domRect.x - domRect.width / 2;
   });
 
   const sizeTransform = useTransform(
@@ -167,7 +182,8 @@ function VerticalDockItem({
       ref={ref}
       onClick={onClick}
       className={cn(
-        "relative flex items-center justify-center cursor-pointer rounded-xl transition-colors mx-auto",
+        "relative flex items-center justify-center cursor-pointer rounded-xl transition-colors",
+        orientation === "vertical" ? "mx-auto" : "my-auto",
         isActive
           ? "bg-primary/20 text-primary"
           : "hover:bg-accent text-muted-foreground hover:text-foreground",
@@ -200,17 +216,14 @@ function VerticalDockItem({
   );
 }
 
-interface VerticalDockLabelProps {
+interface DockLabelProps {
   children: ReactNode;
   className?: string;
   isHovered?: MotionValue<number>;
 }
 
-function VerticalDockLabel({
-  children,
-  className,
-  ...rest
-}: VerticalDockLabelProps) {
+function DockLabel({ children, className, ...rest }: DockLabelProps) {
+  const { orientation } = useDock();
   const restProps = rest as Record<string, unknown>;
   const isHovered = restProps.isHovered as MotionValue<number>;
   const [isVisible, setIsVisible] = useState(false);
@@ -227,12 +240,18 @@ function VerticalDockLabel({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, x: 0 }}
-          animate={{ opacity: 1, x: 10 }}
-          exit={{ opacity: 0, x: 0 }}
+          initial={{ opacity: 0, x: 0, y: 0 }}
+          animate={{
+            opacity: 1,
+            x: orientation === "vertical" ? 10 : 0,
+            y: orientation === "horizontal" ? 10 : 0,
+          }}
+          exit={{ opacity: 0, x: 0, y: 0 }}
           className={cn(
-            "absolute left-full ml-3 top-1/2 -translate-y-1/2 whitespace-nowrap z-50",
-            "rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-lg",
+            "absolute z-50 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-lg",
+            orientation === "vertical"
+              ? "left-full ml-3 top-1/2 -translate-y-1/2"
+              : "top-full mt-3 left-1/2 -translate-x-1/2",
             className,
           )}
           role="tooltip"
@@ -245,17 +264,13 @@ function VerticalDockLabel({
   );
 }
 
-interface VerticalDockIconProps {
+interface DockIconProps {
   children: ReactNode;
   className?: string;
   size?: MotionValue<number>;
 }
 
-function VerticalDockIcon({
-  children,
-  className,
-  ...rest
-}: VerticalDockIconProps) {
+function DockIcon({ children, className, ...rest }: DockIconProps) {
   const restProps = rest as Record<string, unknown>;
   const size = restProps.size as MotionValue<number>;
   const iconSize = useTransform(size, (val) => val * 0.5);
@@ -323,6 +338,9 @@ export type NavigationRailFilterProps = {
   columnOptions?: ColumnOption[];
   columnVisibility?: Record<string, boolean>;
   onColumnVisibilityChange?: (columnId: string, visible: boolean) => void;
+  orientation?: "vertical" | "horizontal"; // Deprecated, use position
+  position?: "top" | "bottom" | "left" | "right";
+  children?: ReactNode;
 };
 
 // Tag color mapping
@@ -376,7 +394,21 @@ export function NavigationRailFilter({
   columnOptions = [],
   columnVisibility = {},
   onColumnVisibilityChange,
+  orientation: propOrientation,
+  position: propPosition,
+  children,
 }: NavigationRailFilterProps) {
+  // Resolve effective position
+  let position = propPosition ?? "left";
+  // Backwards compatibility mapping
+  if (!propPosition && propOrientation === "horizontal") position = "top";
+  if (!propPosition && propOrientation === "vertical") position = "left";
+
+  const dockOrientation =
+    position === "top" || position === "bottom" ? "horizontal" : "vertical";
+
+  const isWrapper = !!children;
+
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [searchValue, setSearchValue] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -521,9 +553,21 @@ export function NavigationRailFilter({
     selectedTags.length,
   ].reduce((a, b) => a + b, 0);
 
-  return (
-    <div className={cn("relative flex h-full", className)}>
-      {/* Collapsed Vertical Dock (macOS-like) */}
+  const DockContent = (
+    <div
+      className={cn(
+        "relative flex transition-all bg-background",
+        // Standalone sizing logic if not wrapping content
+        !isWrapper && "h-full",
+        dockOrientation === "vertical" ? "flex-row h-full" : "flex-col w-full",
+        // If wrapping content, we let parent flex container handle sizing
+        isWrapper && (dockOrientation === "vertical" ? "h-full" : "w-full"),
+        // Specific wrapper overrides for panel
+        isWrapper && isExpanded && "h-full w-auto flex-row",
+        !isWrapper && className, // Apply className here if not wrapper
+      )}
+    >
+      {/* Collapsed Dock */}
       <AnimatePresence mode="wait">
         {!isExpanded && (
           <motion.div
@@ -531,129 +575,149 @@ export function NavigationRailFilter({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="flex items-center h-full z-[10] -translate-y-[10%]"
+            className={cn(
+              "flex items-center z-[10] p-2",
+              dockOrientation === "vertical"
+                ? "h-full flex-col justify-center"
+                : "w-full flex-row justify-center",
+            )}
           >
-            <VerticalDock magnification={56} distance={100} panelWidth={56}>
+            <Dock
+              magnification={56}
+              distance={100}
+              panelSize={56}
+              orientation={dockOrientation}
+            >
               {/* Main Filter Button */}
-              <VerticalDockItem
+              <DockItem
                 onClick={() => setIsExpanded(true)}
                 isActive={hasActiveFilters}
                 badge={hasActiveFilters ? totalActiveFilters : undefined}
               >
-                <VerticalDockLabel>Bộ lọc</VerticalDockLabel>
-                <VerticalDockIcon>
+                <DockLabel>Bộ lọc</DockLabel>
+                <DockIcon>
                   <Filter className="size-full" />
-                </VerticalDockIcon>
-              </VerticalDockItem>
+                </DockIcon>
+              </DockItem>
 
-              <div className="w-6 h-px bg-border/50" />
+              <div
+                className={cn(
+                  "bg-border/50",
+                  dockOrientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
+                )}
+              />
 
               {/* Search */}
-              <VerticalDockItem
+              <DockItem
                 onClick={() => handleClickFocus("search")}
                 isActive={!!searchValue}
                 badge={searchValue ? 1 : undefined}
               >
-                <VerticalDockLabel>Tìm kiếm</VerticalDockLabel>
-                <VerticalDockIcon>
+                <DockLabel>Tìm kiếm</DockLabel>
+                <DockIcon>
                   <Search className="size-full" />
-                </VerticalDockIcon>
-              </VerticalDockItem>
+                </DockIcon>
+              </DockItem>
 
               {/* Select */}
               {selectOptions.length > 0 && (
-                <VerticalDockItem
+                <DockItem
                   onClick={() => handleClickFocus("select")}
                   isActive={!!selectValue}
                   badge={selectValue ? 1 : undefined}
                 >
-                  <VerticalDockLabel>
+                  <DockLabel>
                     {selectValue
                       ? selectOptions.find((o) => o.value === selectValue)
                           ?.label || selectLabel
                       : selectPlaceholder}
-                  </VerticalDockLabel>
-                  <VerticalDockIcon>
+                  </DockLabel>
+                  <DockIcon>
                     <ListFilter className="size-full" />
-                  </VerticalDockIcon>
-                </VerticalDockItem>
+                  </DockIcon>
+                </DockItem>
               )}
 
               {/* Select 2 (Priority) */}
               {select2Options.length > 0 && (
-                <VerticalDockItem
+                <DockItem
                   onClick={() => handleClickFocus("select2")}
                   isActive={!!select2Value}
                   badge={select2Value ? 1 : undefined}
                 >
-                  <VerticalDockLabel>
+                  <DockLabel>
                     {select2Value
                       ? select2Options.find((o) => o.value === select2Value)
                           ?.label || select2Label
                       : select2Placeholder}
-                  </VerticalDockLabel>
-                  <VerticalDockIcon>
+                  </DockLabel>
+                  <DockIcon>
                     <ListFilter className="size-full" />
-                  </VerticalDockIcon>
-                </VerticalDockItem>
+                  </DockIcon>
+                </DockItem>
               )}
 
               {/* Combobox */}
               {comboboxOptions.length > 0 && (
-                <VerticalDockItem
+                <DockItem
                   onClick={() => handleClickFocus("combobox")}
                   isActive={comboboxValues.length > 0}
                   badge={comboboxValues.length || undefined}
                 >
-                  <VerticalDockLabel>{comboboxLabel}</VerticalDockLabel>
-                  <VerticalDockIcon>
+                  <DockLabel>{comboboxLabel}</DockLabel>
+                  <DockIcon>
                     <Layers className="size-full" />
-                  </VerticalDockIcon>
-                </VerticalDockItem>
+                  </DockIcon>
+                </DockItem>
               )}
 
               {/* Tags */}
               {tags.length > 0 && (
-                <VerticalDockItem
+                <DockItem
                   onClick={() => handleClickFocus("tags")}
                   isActive={selectedTags.length > 0}
                   badge={selectedTags.length || undefined}
                 >
-                  <VerticalDockLabel>Tags</VerticalDockLabel>
-                  <VerticalDockIcon>
+                  <DockLabel>Tags</DockLabel>
+                  <DockIcon>
                     <Tags className="size-full" />
-                  </VerticalDockIcon>
-                </VerticalDockItem>
+                  </DockIcon>
+                </DockItem>
               )}
 
               {/* Columns (Display Options) */}
               {columnOptions.length > 0 && (
-                <VerticalDockItem onClick={() => handleClickFocus("columns")}>
-                  <VerticalDockLabel>Hiển thị cột</VerticalDockLabel>
-                  <VerticalDockIcon>
+                <DockItem onClick={() => handleClickFocus("columns")}>
+                  <DockLabel>Hiển thị cột</DockLabel>
+                  <DockIcon>
                     <Settings2 className="size-full" />
-                  </VerticalDockIcon>
-                </VerticalDockItem>
+                  </DockIcon>
+                </DockItem>
               )}
 
               {/* Clear All */}
               {hasActiveFilters && (
                 <>
-                  <div className="w-6 h-px bg-border/50" />
-                  <VerticalDockItem onClick={handleClearAll}>
-                    <VerticalDockLabel>Xóa tất cả</VerticalDockLabel>
-                    <VerticalDockIcon>
+                  <div
+                    className={cn(
+                      "bg-border/50",
+                      dockOrientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
+                    )}
+                  />
+                  <DockItem onClick={handleClearAll}>
+                    <DockLabel>Xóa tất cả</DockLabel>
+                    <DockIcon>
                       <X className="size-full" />
-                    </VerticalDockIcon>
-                  </VerticalDockItem>
+                    </DockIcon>
+                  </DockItem>
                 </>
               )}
-            </VerticalDock>
+            </Dock>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Expanded Panel */}
+      {/* Expanded Panel - Always Vertical Left Style */}
       <AnimatePresence mode="wait">
         {isExpanded && (
           <motion.div
@@ -1119,6 +1183,31 @@ export function NavigationRailFilter({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+
+  if (!isWrapper) return DockContent;
+
+  const isRowLayout = isExpanded || position === "left" || position === "right";
+  const renderOrder =
+    (position === "bottom" && !isExpanded) ||
+    (position === "right" && !isExpanded)
+      ? "reverse"
+      : "normal";
+
+  return (
+    <div
+      className={cn(
+        "flex w-full h-full overflow-hidden transition-all",
+        isRowLayout ? "flex-row" : "flex-col",
+        className,
+      )}
+    >
+      {renderOrder === "normal" ? DockContent : null}
+      <div className="flex-1 overflow-auto min-w-0 min-h-0 relative">
+        {children}
+      </div>
+      {renderOrder === "reverse" ? DockContent : null}
     </div>
   );
 }

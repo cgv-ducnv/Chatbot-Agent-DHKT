@@ -43,6 +43,7 @@ export function useUpdateGroup() {
       queryClient.invalidateQueries({
         queryKey: ["department-detail"],
       });
+      console.log(response);
     },
     onError: (error: any) => {
       toast.error(
@@ -50,6 +51,7 @@ export function useUpdateGroup() {
           error.message ||
           "Có lỗi khi cập nhật nhóm",
       );
+      console.log(error);
     },
   });
 }

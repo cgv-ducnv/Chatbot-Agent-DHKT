@@ -175,7 +175,11 @@ function UsersPageContent() {
         <div className="@container/main px-4 py-4 lg:px-6 space-y-6">
           <AppBreadcrumb
             items={[
-              { label: "Home", href: "/", icon: <Home className="size-4" /> },
+              {
+                label: "Dashboard",
+                href: "/",
+                icon: <Home className="size-4" />,
+              },
               {
                 label: "Quản lý người dùng",
                 href: "/users",

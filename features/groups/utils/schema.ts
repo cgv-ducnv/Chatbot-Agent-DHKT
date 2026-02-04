@@ -1,29 +1,30 @@
 import { z } from "zod";
 
 export const groupSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   name: z.string(),
   department_id: z.string(),
   description: z.string(),
   tenant_id: z.string(),
-  is_active: z.number(),
   member_count: z.number().optional(),
 });
 
 export const groupDefaultValues = {
   name: "",
-  department_id: "",
+  department_id: 0,
   description: "",
   tenant_id: "",
 };
 
 export const groupFormSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, "Tên vai trò không được để trống"),
-  department_id: z.string().min(1, "Cần có phòng ban"),
+  id: z.number().optional(),
+  name: z
+    .string()
+    .min(1, "Tên nhóm không được để trống")
+    .max(50, "Tên nhóm không được quá 50 ký tự"),
+  department_id: z.coerce.number().min(1, "Cần có phòng ban"),
   tenant_id: z.string().optional(),
   description: z.string().optional(),
-  is_active: z.number().optional(),
 });
 
 export type Group = z.infer<typeof groupSchema>;

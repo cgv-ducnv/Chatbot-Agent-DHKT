@@ -1,66 +1,43 @@
-import { Icons } from "@/features/discord/components/icons";
 import type { SidebarData } from "@/lib/types";
 import {
   IconArrowsExchange,
-  IconBarrierBlock,
-  IconBrain,
   IconBrowserCheck,
-  IconBug,
   IconCalendar,
   IconChartBar,
   IconChecklist,
-  IconCoin,
-  IconColumns,
   IconCreditCard,
-  IconError404,
   IconHelp,
   IconLayoutDashboard,
   IconLock,
-  IconLockAccess,
   IconMessages,
   IconNotification,
   IconPalette,
   IconReportMoney,
-  IconServerOff,
   IconSettings,
-  IconTable,
   IconTool,
   IconUserCog,
-  IconUserOff,
   IconUsers,
   IconShieldCheck,
   IconBuilding,
   IconFingerprint,
-  IconArrowAutofitWidth,
-  IconFilter,
-  IconCategory2,
+  IconRobot,
 } from "@tabler/icons-react";
 import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
-  KanbanIcon,
   MailIcon,
   Workflow,
 } from "lucide-react";
 import { PERMISSIONS } from "@/constants/permission";
+import LogoHAU from "@/public/logocon/Logo_HAU.png";
 
 export const sidebarData: SidebarData = {
   teams: [
     {
-      name: "Omichannel",
-      logo: Command,
-      plan: "Omichannel",
-    },
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
+      name: "Nhóm kế toán",
+      logo: LogoHAU,
+      plan: "Đại học kiến trúc Hà Nội",
     },
   ],
   navGroups: [
@@ -117,6 +94,12 @@ export const sidebarData: SidebarData = {
           title: "Tasks",
           url: "/tasks",
           icon: IconChecklist,
+        },
+        {
+          title: "Quản lý agent",
+          url: "/ai-configs",
+          icon: IconRobot,
+          permissions: [PERMISSIONS.VIEW_AI_CONFIGS],
         },
         {
           title: "Quản lý ticket",
@@ -318,7 +301,6 @@ export const sidebarData: SidebarData = {
           title: "Help Center",
           url: "/help-center",
           icon: IconHelp,
-          badge: "Coming Soon",
         },
       ],
     },

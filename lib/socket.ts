@@ -19,6 +19,11 @@ export const getSocket = (token: string) => {
         token,
       },
       autoConnect: false,
+      // Quan trọng
+      reconnection: true,
+      reconnectionAttempts: 10, // tối đa 10 lần
+      reconnectionDelay: 1000, // 1s giữa mỗi lần
+      reconnectionDelayMax: 5000, // tối đa 5s
     });
   }
   return socket;

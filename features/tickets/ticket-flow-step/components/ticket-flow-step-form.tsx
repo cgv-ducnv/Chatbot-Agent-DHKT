@@ -84,7 +84,7 @@ interface StepPreview {
     name: string;
   };
   assignee_group?: {
-    id: string;
+    id: number;
     name: string;
     description: string;
   };
@@ -912,9 +912,10 @@ export function TicketFlowStepFormSheet({
                                             ) : field.value ? (
                                               groups.find(
                                                 (g: {
-                                                  id: string;
+                                                  id: number;
                                                   name: string;
-                                                }) => g.id === field.value,
+                                                }) =>
+                                                  String(g.id) === field.value,
                                               )?.name || "Chọn nhóm..."
                                             ) : (
                                               "Chọn nhóm..."
@@ -932,7 +933,7 @@ export function TicketFlowStepFormSheet({
                                           <CommandGroup>
                                             {groups.map(
                                               (group: {
-                                                id: string;
+                                                id: number;
                                                 name: string;
                                               }) => (
                                                 <CommandItem
@@ -942,7 +943,7 @@ export function TicketFlowStepFormSheet({
                                                   onSelect={() => {
                                                     form.setValue(
                                                       "assignee_group_id",
-                                                      group.id,
+                                                      String(group.id),
                                                       {
                                                         shouldValidate: false,
                                                         shouldDirty: false,
@@ -955,7 +956,8 @@ export function TicketFlowStepFormSheet({
                                                   <Check
                                                     className={cn(
                                                       "mr-2 h-4 w-4",
-                                                      field.value === group.id
+                                                      field.value ===
+                                                        String(group.id)
                                                         ? "opacity-100"
                                                         : "opacity-0",
                                                     )}
