@@ -36,6 +36,14 @@ export interface ChatMessage {
   reactions: MessageReaction[];
   replyTo: string | null;
   attachments?: MessageAttachment[];
+  role?: "bot" | "customer" | "staff";
+  user?: {
+    id: number;
+    username: string;
+    fullname: string;
+    email: string;
+  };
+  contact_id?: number;
 }
 
 export interface LastMessage {
@@ -55,6 +63,12 @@ export interface ChatConversation {
   unreadCount: number;
   isPinned: boolean;
   isMuted: boolean;
+  // API fields
+  status: "active" | "inactive" | "closed";
+  ai_active: boolean;
+  message_count: number;
+  created_at: string;
+  contact_id?: number;
 }
 
 export interface ChatState {

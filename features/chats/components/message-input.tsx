@@ -10,6 +10,7 @@ import {
   Smile,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { useSocket } from "@/contexts/socket-context";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,16 +32,20 @@ interface MessageInputProps {
   onSendMessage: (content: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  contactId?: number;
 }
 
 export function MessageInput({
   onSendMessage,
   disabled = false,
   placeholder = "Type a message...",
+  contactId,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { socket } = useSocket();
 
   const handleSendMessage = () => {
     const trimmedMessage = message.trim();
@@ -66,15 +71,52 @@ export function MessageInput({
     const value = e.target.value;
     setMessage(value);
 
+    // Dynamic height adjustment
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
 
-    if (value.trim() && !isTyping) {
-      setIsTyping(true);
-    } else if (!value.trim() && isTyping) {
-      setIsTyping(false);
+    // Handle typing indicator emission
+    if (socket && contactId) {
+      // If just started typing or previously stopped
+      if (value.trim() && !isTyping) {
+        setIsTyping(true);
+        socket.emit("staff_typing", {
+          contact_id: contactId,
+          is_typing: true,
+        });
+      }
+      // If cleared input
+      else if (!value.trim() && isTyping) {
+        setIsTyping(false);
+        socket.emit("staff_typing", {
+          contact_id: contactId,
+          is_typing: false,
+        });
+      }
+
+      // Debounce stop typing
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (value.trim()) {
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          socket.emit("staff_typing", {
+            contact_id: contactId,
+            is_typing: false,
+          });
+        }, 1500);
+      }
+    } else {
+      // Fallback local state logic if no socket/contactId
+      if (value.trim() && !isTyping) {
+        setIsTyping(true);
+      } else if (!value.trim() && isTyping) {
+        setIsTyping(false);
+      }
     }
   };
 

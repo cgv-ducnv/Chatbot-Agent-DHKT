@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useQueries,
+} from "@tanstack/react-query";
 import { contactsService } from "@/services/contacts/services";
 import type {
   GetContactsParams,
@@ -18,6 +23,16 @@ export const useContact = (id: number) => {
     queryKey: ["contacts", id],
     queryFn: () => contactsService.getContactsById(id),
     enabled: !!id,
+  });
+};
+
+export const useContactsByIds = (ids: number[]) => {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["contacts", id],
+      queryFn: () => contactsService.getContactsById(id),
+      enabled: !!id,
+    })),
   });
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertCircle,
   Filter,
   Hash,
   MoreVertical,
@@ -9,6 +10,7 @@ import {
   Settings,
   UserPlus,
   Users,
+  AlertTriangle,
   VolumeX,
 } from "lucide-react";
 
@@ -24,10 +26,171 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { formatMessageTime } from "@/helpers/format-message-time";
 import { cn } from "@/lib/utils";
 import type { ChatConversation, ChatUser } from "../utils/types";
 import { useChat } from "../utils/use-chat";
+import { useUpdateConversation } from "@/hooks/conversations/use-conversations";
+import { AnimatePresence, motion } from "framer-motion";
+import { useContact } from "@/hooks/contacts/use-contacts";
+
+import { Mail, Phone, Bot } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { convertDateTime } from "@/utils/convert-time";
+
+interface ChatConversationItemProps {
+  conversation: ChatConversation;
+  selectedConversation: string | null;
+  onSelectConversation: (conversationId: string) => void;
+}
+
+function ChatConversationItem({
+  conversation,
+  selectedConversation,
+  onSelectConversation,
+}: ChatConversationItemProps) {
+  const updateConversation = useUpdateConversation();
+  const { data: contactData } = useContact(Number(conversation.id));
+  const contact = contactData?.data?.data;
+
+  const isActive = conversation.status === "active";
+  const hasUnread = conversation.unreadCount > 0;
+  const isSelected = selectedConversation === conversation.id;
+
+  const email = contact?.email;
+  const phone = contact?.sdt;
+  const hasBeenOpenedRef = useRef(false);
+  const [hideDot, setHideDot] = useState(false);
+  useEffect(() => {
+    if (isSelected && !hasBeenOpenedRef.current) {
+      hasBeenOpenedRef.current = true; // đánh dấu đã mở
+      setHideDot(true); // ẩn dot
+    }
+  }, [isSelected]);
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.2 }}
+      className={cn(
+        "group relative flex items-start gap-3 p-3.5 cursor-pointer transition-all duration-300",
+        "border border-transparent",
+        isSelected
+          ? "bg-primary/[0.08] border-primary/10 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.05)]"
+          : "hover:bg-accent/40 hover:border-accent-foreground/5",
+        hasUnread && !isSelected && "dark:bg-blue-900/10",
+      )}
+      onClick={() => onSelectConversation(conversation.id)}
+    >
+      {/* Selection Pillar */}
+      {isSelected && (
+        <motion.div
+          layoutId="active-pillar"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+
+      {/* Avatar Container */}
+      <div className="relative shrink-0">
+        <div
+          className={cn(
+            "rounded-full p-0.5 transition-transform duration-300 group-hover:scale-105",
+            isSelected ? "bg-primary/20" : "bg-transparent",
+          )}
+        >
+          <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+            <AvatarImage src={conversation.avatar} alt={conversation.name} />
+            <AvatarFallback className="text-sm font-bold bg-linear-to-br from-primary/20 to-primary/5 text-primary">
+              {conversation.type === "group" ? (
+                <Users className="size-5" />
+              ) : (
+                conversation.name.slice(0, 2).toUpperCase()
+              )}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Status Dot dưới Avatar */}
+        <div className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center">
+          {conversation.unreadCount === 1 && !hideDot && (
+            <span className="relative flex h-4 w-4">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-4 w-4 rounded-full bg-green-500 border-2 border-background shadow-sm" />
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Main Info */}
+      <div className="flex-1 min-w-0 space-y-1">
+        {/* Metadata Row: Email/Phone */}
+        {(email || phone) && (
+          <div className="flex flex-col gap-0.5">
+            {email && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 leading-tight">
+                <Mail className="size-3 shrink-0 opacity-60" />
+                <span className="truncate">{email}</span>
+              </div>
+            )}
+            {phone && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 leading-tight">
+                <Phone className="size-3 shrink-0 opacity-60" />
+                <span className="truncate">{phone}</span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-2">
+          {/* <h3
+            className={cn(
+              "font-semibold text-sm truncate leading-none transition-colors",
+              isSelected ? "text-primary" : "text-foreground",
+              hasUnread && "font-bold",
+            )}
+          >
+            {conversation.name}
+          </h3> */}
+          <span className="text-[11px] pl-1 font-medium text-muted-foreground/70 tabular-nums">
+            Thời gian tạo:{" "}
+            {convertDateTime(conversation.created_at, "short").datetime}
+          </span>
+        </div>
+      </div>
+
+      {/* Floating Action (Switch) */}
+      <div
+        className="self-center ml-2 flex flex-col items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Switch */}
+        <div
+          className="flex flex-col items-center cursor-pointer"
+          title={conversation.ai_active ? "Bot mode" : "Manual mode"}
+        >
+          <Switch
+            checked={conversation.ai_active}
+            onCheckedChange={(checked) => {
+              updateConversation.mutate({
+                id: Number(conversation.id),
+                data: { ai_active: checked },
+              });
+            }}
+            className="h-4 w-8 data-[state=checked]:bg-blue-600"
+          />
+        </div>
+
+        {/* Icons + Badge */}
+        <div className="flex items-center gap-2">
+          {conversation.isPinned && <Pin className="size-3.5 text-blue-500" />}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 interface ConversationListProps {
   conversations: ChatConversation[];
@@ -57,18 +220,6 @@ export function ChatConversationList({
       new Date(a.lastMessage.timestamp).getTime()
     );
   });
-
-  const getOnlineStatus = (conversation: ChatConversation) => {
-    if (
-      conversation.type === "direct" &&
-      conversation.participants.length >= 1
-    ) {
-      const participantId = conversation.participants[0];
-      const user = users.find((u) => u.id === participantId);
-      return user?.status === "online";
-    }
-    return false;
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -116,98 +267,15 @@ export function ChatConversationList({
         </div>
       </div>
 
-      {/* Conversations */}
       <ScrollArea className="flex-1 h-0 min-h-0">
-        <div className="p-2 space-y-1">
+        <div>
           {sortedConversations.map((conversation) => (
-            <div
+            <ChatConversationItem
               key={conversation.id}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-xl cursor-pointer relative overflow-hidden transition-all duration-200",
-                selectedConversation === conversation.id
-                  ? "bg-primary/10 text-accent-foreground shadow-sm"
-                  : "hover:bg-accent/50",
-              )}
-              onClick={() => onSelectConversation(conversation.id)}
-            >
-              {/* Avatar with online indicator */}
-              <div className="relative shrink-0">
-                <Avatar
-                  className={cn(
-                    "h-12 w-12 transition-all",
-                    selectedConversation === conversation.id &&
-                      "ring-2 ring-primary ring-offset-2 ring-offset-background",
-                  )}
-                >
-                  <AvatarImage
-                    src={conversation.avatar}
-                    alt={conversation.name}
-                  />
-                  <AvatarFallback className="text-sm bg-linear-to-br from-primary/20 to-primary/10">
-                    {conversation.type === "group" ? (
-                      <Users className="size-5 text-primary" />
-                    ) : (
-                      conversation.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-
-                {/* Online indicator for direct messages */}
-                {conversation.type === "direct" &&
-                  getOnlineStatus(conversation) && (
-                    <div className="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 border-2 border-background rounded-full animate-pulse" />
-                  )}
-
-                {/* Group indicator */}
-                {conversation.type === "group" && (
-                  <div className="absolute bottom-0 right-0 size-4 bg-blue-500 border-2 border-background rounded-full flex items-center justify-center">
-                    <Hash className="size-2 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="flex items-center justify-between mb-1 min-w-0">
-                  <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden pr-2">
-                    <h3 className="font-medium truncate min-w-0 max-w-[160px] lg:max-w-[180px]">
-                      {conversation.name}
-                    </h3>
-                    {conversation.isPinned && (
-                      <Pin className="size-3 text-muted-foreground shrink-0" />
-                    )}
-                    {conversation.isMuted && (
-                      <VolumeX className="size-3 text-muted-foreground shrink-0" />
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-                    {formatMessageTime(conversation.lastMessage.timestamp)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 min-w-0">
-                  <p className="text-sm text-muted-foreground truncate flex-1 min-w-0 max-w-[180px] lg:max-w-[200px] pr-2">
-                    {conversation.lastMessage.content}
-                  </p>
-
-                  {/* Unread count */}
-                  {conversation.unreadCount > 0 && (
-                    <Badge
-                      variant="default"
-                      className="min-w-[20px] h-5 text-xs cursor-pointer shrink-0"
-                    >
-                      {conversation.unreadCount > 99
-                        ? "99+"
-                        : conversation.unreadCount}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
+              conversation={conversation}
+              selectedConversation={selectedConversation}
+              onSelectConversation={onSelectConversation}
+            />
           ))}
         </div>
       </ScrollArea>

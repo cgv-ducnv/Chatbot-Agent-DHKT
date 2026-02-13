@@ -64,26 +64,26 @@ export function ChatHeader({
   const conversationUsers = getConversationUsers();
   const primaryUser = conversationUsers[0];
 
-  const getStatusText = () => {
-    if (conversation.type === "group") {
-      const onlineCount = conversationUsers.filter(
-        (user) => user.status === "online",
-      ).length;
-      return `${conversation.participants.length} members, ${onlineCount} online`;
-    } else if (primaryUser) {
-      switch (primaryUser.status) {
-        case "online":
-          return "Active now";
-        case "away":
-          return "Away";
-        case "offline":
-          return `Last seen ${new Date(primaryUser.lastSeen).toLocaleDateString()}`;
-        default:
-          return "";
-      }
-    }
-    return "";
-  };
+  // const getStatusText = () => {
+  //   if (conversation.type === "group") {
+  //     const onlineCount = conversationUsers.filter(
+  //       (user) => user.status === "online",
+  //     ).length;
+  //     return `${conversation.participants.length} members, ${onlineCount} online`;
+  //   } else if (primaryUser) {
+  //     switch (primaryUser.status) {
+  //       case "online":
+  //         return "Active now";
+  //       case "away":
+  //         return "Away";
+  //       case "offline":
+  //         return `Last seen ${new Date(primaryUser.lastSeen).toLocaleDateString()}`;
+  //       default:
+  //         return "";
+  //     }
+  //   }
+  //   return "";
+  // };
 
   const getStatusColor = () => {
     if (conversation.type === "group") return "text-muted-foreground";
@@ -125,13 +125,13 @@ export function ChatHeader({
             {conversation.isMuted && (
               <BellOff className="size-4 text-muted-foreground" />
             )}
-            {conversation.type === "group" && (
+            {/* {conversation.type === "group" && (
               <Badge variant="secondary" className="text-xs cursor-pointer">
                 Group
               </Badge>
-            )}
+            )} */}
           </div>
-          <p className={`text-sm ${getStatusColor()}`}>{getStatusText()}</p>
+          {/* <p className={`text-sm ${getStatusColor()}`}>{getStatusText()}</p> */}
         </div>
       </div>
 

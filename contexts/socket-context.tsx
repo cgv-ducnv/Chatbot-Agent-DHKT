@@ -45,12 +45,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     function onConnect() {
       setIsConnected(true);
-      console.log("Socket connected");
+      console.log("Socket connected:", socketInstance.id);
     }
 
-    function onDisconnect() {
+    function onDisconnect(reason: any) {
       setIsConnected(false);
-      console.log("Socket disconnected");
+      console.log("Socket disconnected:", reason);
+    }
+
+    function onConnectError(err: any) {
+      console.error("Socket connection error:", err);
     }
 
     // Nếu socket instance đã tồn tại (singleton) nhưng chưa connect hoặc auth cũ
@@ -66,12 +70,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     socketInstance.on("connect", onConnect);
     socketInstance.on("disconnect", onDisconnect);
+    socketInstance.on("connect_error", onConnectError);
 
     setSocket(socketInstance);
 
     return () => {
       socketInstance.off("connect", onConnect);
       socketInstance.off("disconnect", onDisconnect);
+      socketInstance.off("connect_error", onConnectError);
       // Không disconnect ở đây vì singleton có thể được dùng lại,
       // hoặc logic app muốn giữ connection khi navigate.
       // Tuy nhiên nếu Provider unmount (ví dụ user logout), socket nên disconnect.

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Permission } from "@/constants/permission";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -54,7 +55,11 @@ export function ProtectedRoute({
   // Điều này đảm bảo children KHÔNG BAO GIỜ được render nếu điều kiện chưa thỏa mãn
   // Giúp tránh lỗi "flash content" (hiện trang Users rồi mới redirect)
   if (isLoading || !isAuthenticated || !hasPermission) {
-    return null;
+    return (
+      <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
   }
 
   // Chỉ render children khi mọi điều kiện đã thỏa mãn

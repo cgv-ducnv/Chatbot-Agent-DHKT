@@ -6,7 +6,7 @@ export function formatMessageTime(timestamp: string): string {
   if (isToday(date)) {
     return format(date, "h:mm a");
   } else if (isYesterday(date)) {
-    return "Yesterday";
+    return "Hôm qua";
   } else if (isThisWeek(date)) {
     return format(date, "EEEE");
   } else if (isThisYear(date)) {
