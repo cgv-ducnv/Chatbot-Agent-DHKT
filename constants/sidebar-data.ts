@@ -49,40 +49,40 @@ export const sidebarData: SidebarData = {
           url: "/dashboard",
           icon: IconLayoutDashboard,
         },
-        {
-          title: "Business Dashboard",
-          url: "/dashboard2",
-          icon: IconChartBar,
-        },
-        {
-          title: "Payment Dashboard",
-          icon: IconReportMoney,
-          items: [
-            {
-              title: "Payment Dashboard",
-              url: "/payment-dashboard",
-              icon: IconCreditCard,
-            },
-            {
-              title: "Payment Transactions",
-              url: "/payment-transactions",
-              icon: IconArrowsExchange,
-            },
-          ],
-        },
+        // {
+        //   title: "Business Dashboard",
+        //   url: "/dashboard2",
+        //   icon: IconChartBar,
+        // },
+        // {
+        //   title: "Payment Dashboard",
+        //   icon: IconReportMoney,
+        //   items: [
+        //     {
+        //       title: "Payment Dashboard",
+        //       url: "/payment-dashboard",
+        //       icon: IconCreditCard,
+        //     },
+        //     {
+        //       title: "Payment Transactions",
+        //       url: "/payment-transactions",
+        //       icon: IconArrowsExchange,
+        //     },
+        //   ],
+        // },
       ],
     },
     {
       title: "Quản lý hệ thống",
       items: [
-        {
-          title: "Mail",
-          url: "/mail",
-          icon: MailIcon,
-          // badge: "Coming Soon",
-          badge: "New",
-          badgeColor: "green",
-        },
+        // {
+        //   title: "Mail",
+        //   url: "/mail",
+        //   icon: MailIcon,
+        //   // badge: "Coming Soon",
+        //   badge: "New",
+        //   badgeColor: "green",
+        // },
         // {
         //   title: "Discord",
         //   url: "/discord",
@@ -90,11 +90,11 @@ export const sidebarData: SidebarData = {
         //   badge: "New",
         //   badgeColor: "green",
         // },
-        {
-          title: "Tasks",
-          url: "/tasks",
-          icon: IconChecklist,
-        },
+        // {
+        //   title: "Tasks",
+        //   url: "/tasks",
+        //   icon: IconChecklist,
+        // },
         {
           title: "Quản lý agent",
           url: "/ai-configs",
@@ -297,11 +297,11 @@ export const sidebarData: SidebarData = {
             },
           ],
         },
-        {
-          title: "Help Center",
-          url: "/help-center",
-          icon: IconHelp,
-        },
+        // {
+        //   title: "Help Center",
+        //   url: "/help-center",
+        //   icon: IconHelp,
+        // },
       ],
     },
   ],

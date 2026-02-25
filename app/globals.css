@@ -163,4 +163,49 @@
     mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
   }
+
+  .star-shape {
+    clip-path: polygon(
+      50% 0%,
+      61% 35%,
+      98% 35%,
+      68% 57%,
+      79% 91%,
+      50% 70%,
+      21% 91%,
+      32% 57%,
+      2% 35%,
+      39% 35%
+    );
+  }
+
+  @keyframes float-soft {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .float-soft {
+    animation: float-soft 6s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%,
+    50%,
+    100% {
+      opacity: 1;
+    }
+    25%,
+    75% {
+      opacity: 0;
+    }
+  }
+
+  .cursor-blink {
+    animation: blink 1.2s infinite;
+  }
 }

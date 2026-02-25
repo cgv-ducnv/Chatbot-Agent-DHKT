@@ -10,8 +10,6 @@ import {
   Settings,
   UserPlus,
   Users,
-  AlertTriangle,
-  VolumeX,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,15 +25,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { formatMessageTime } from "@/helpers/format-message-time";
 import { cn } from "@/lib/utils";
 import type { ChatConversation, ChatUser } from "../utils/types";
 import { useChat } from "../utils/use-chat";
 import { useUpdateConversation } from "@/hooks/conversations/use-conversations";
-import { AnimatePresence, motion } from "framer-motion";
-import { useContact } from "@/hooks/contacts/use-contacts";
-
-import { Mail, Phone, Bot } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { convertDateTime } from "@/utils/convert-time";
 
@@ -51,15 +45,11 @@ function ChatConversationItem({
   onSelectConversation,
 }: ChatConversationItemProps) {
   const updateConversation = useUpdateConversation();
-  const { data: contactData } = useContact(Number(conversation.id));
-  const contact = contactData?.data?.data;
 
-  const isActive = conversation.status === "active";
+  // const isActive = conversation.status === "active";
   const hasUnread = conversation.unreadCount > 0;
   const isSelected = selectedConversation === conversation.id;
 
-  const email = contact?.email;
-  const phone = contact?.sdt;
   const hasBeenOpenedRef = useRef(false);
   const [hideDot, setHideDot] = useState(false);
   useEffect(() => {
@@ -108,7 +98,7 @@ function ChatConversationItem({
               {conversation.type === "group" ? (
                 <Users className="size-5" />
               ) : (
-                conversation.name.slice(0, 2).toUpperCase()
+                conversation.name.slice(0, 3).toUpperCase()
               )}
             </AvatarFallback>
           </Avatar>
@@ -126,38 +116,51 @@ function ChatConversationItem({
       </div>
 
       {/* Main Info */}
-      <div className="flex-1 min-w-0 space-y-1">
-        {/* Metadata Row: Email/Phone */}
-        {(email || phone) && (
-          <div className="flex flex-col gap-0.5">
-            {email && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 leading-tight">
-                <Mail className="size-3 shrink-0 opacity-60" />
-                <span className="truncate">{email}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: name + last message */}
+          <div className="min-w-0 flex-1 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <h3
+                className={cn(
+                  "font-semibold text-sm truncate leading-none transition-colors",
+                  isSelected ? "text-primary" : "text-foreground",
+                  hasUnread && "font-bold",
+                )}
+              >
+                {conversation.name}
+              </h3>
+              {conversation.ai_active && (
+                <span className="inline-flex items-center rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-medium px-2 py-0.5">
+                  Bot
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="mt-1 text-xs text-muted-foreground/80 truncate">
+                <span className="text-[11px] font-medium text-muted-foreground/70 tabular-nums whitespace-nowrap">
+                  Tạo lúc:{" "}
+                  {convertDateTime(conversation.created_at, "short").datetime}
+                </span>{" "}
+              </p>
+              <div className="h-4 text-[10px] font-semibold leading-none rounded-full">
+                Có{" "}
+                <span className="font-bold text-blue-600">
+                  {conversation.message_count}
+                </span>{" "}
+                tin nhắn
               </div>
-            )}
-            {phone && (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 leading-tight">
-                <Phone className="size-3 shrink-0 opacity-60" />
-                <span className="truncate">{phone}</span>
-              </div>
-            )}
+            </div>
           </div>
-        )}
-        <div className="flex items-center justify-between gap-2">
-          {/* <h3
-            className={cn(
-              "font-semibold text-sm truncate leading-none transition-colors",
-              isSelected ? "text-primary" : "text-foreground",
-              hasUnread && "font-bold",
+
+          {/* Right: time + unread badge */}
+          {/* <div className="flex flex-col items-end gap-1 shrink-0 ">
+            {hasUnread && (
+              <span className="inline-flex min-w-[16px] h-[16px] items-center justify-center rounded-full bg-red-500 text-sm font-semibold text-white">
+                {conversation.unreadCount}
+              </span>
             )}
-          >
-            {conversation.name}
-          </h3> */}
-          <span className="text-[11px] pl-1 font-medium text-muted-foreground/70 tabular-nums">
-            Thời gian tạo:{" "}
-            {convertDateTime(conversation.created_at, "short").datetime}
-          </span>
+          </div> */}
         </div>
       </div>
 
@@ -183,10 +186,8 @@ function ChatConversationItem({
           />
         </div>
 
-        {/* Icons + Badge */}
-        <div className="flex items-center gap-2">
-          {conversation.isPinned && <Pin className="size-3.5 text-blue-500" />}
-        </div>
+        {/* Icons + Badge (reserved for future actions) */}
+        <div className="flex items-center gap-2" />
       </div>
     </motion.div>
   );
@@ -222,7 +223,7 @@ export function ChatConversationList({
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full">
       <div className="hidden lg:flex items-center justify-between h-16 px-4 border-b shrink-0">
         <h2 className="text-lg font-semibold">Danh sách trò chuyện</h2>
         <DropdownMenu>

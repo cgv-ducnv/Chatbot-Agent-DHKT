@@ -51,15 +51,12 @@ import {
   withDefault,
 } from "use-query-params";
 import { EmptyData } from "@/components/empty-data";
-import {
-  IconDetails,
-  IconMoodEmpty,
-  IconComponents,
-} from "@tabler/icons-react";
+import { IconMoodEmpty, IconComponents } from "@tabler/icons-react";
 import ReactCountryFlag from "react-country-flag";
 import { LANGUAGE_OPTIONS } from "@/constants/language";
 import { convertDateTime } from "@/utils/convert-time";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps {
   configs: AIConfig[];
@@ -148,7 +145,7 @@ export function AIConfigsDataTableList({
     {
       id: "select",
       header: ({ table }) => (
-        <div className="flex items-center justify-center px-2">
+        <div className="flex items-center justify-center min-w-[40px]">
           <Checkbox
             checked={
               table.getIsAllPageRowsSelected() ||
@@ -162,7 +159,7 @@ export function AIConfigsDataTableList({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="flex items-center justify-center px-2">
+        <div className="flex items-center justify-center min-w-[40px]">
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -172,7 +169,7 @@ export function AIConfigsDataTableList({
       ),
       enableSorting: false,
       enableHiding: false,
-      size: 50,
+      size: 40,
     },
     {
       accessorKey: "name",
@@ -180,7 +177,7 @@ export function AIConfigsDataTableList({
         return (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-2 h-8 data-[state=open]:bg-accent hover:bg-transparent p-0"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Tên cấu hình
@@ -195,9 +192,11 @@ export function AIConfigsDataTableList({
         );
       },
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{row.original.name}</span>
-          <span className="text-sm text-muted-foreground line-clamp-2 max-w-[500px]">
+        <div className="flex flex-col py-1">
+          <span className="font-semibold whitespace-normal text-primary">
+            {row.original.name}
+          </span>
+          <span className="text-sm text-muted-foreground line-clamp-2 whitespace-normal mt-0.5">
             {row.original.description}
           </span>
         </div>
@@ -209,7 +208,7 @@ export function AIConfigsDataTableList({
         return (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-2 h-8 data-[state=open]:bg-accent hover:bg-transparent p-0"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Model
@@ -223,7 +222,9 @@ export function AIConfigsDataTableList({
           </Button>
         );
       },
-      cell: ({ row }) => <span>{row.original.model_name}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.model_name}</span>
+      ),
     },
     {
       accessorKey: "language",
@@ -254,7 +255,7 @@ export function AIConfigsDataTableList({
       header: "Ngày tạo",
 
       cell: ({ row }) => (
-        <div className="flex flex-col p-1">
+        <div className="flex flex-col p-1 min-w-[100px]">
           <span>{convertDateTime(row.original.created_at).date}</span>
           <span className="text-xs text-muted-foreground">
             {convertDateTime(row.original.created_at).time}
@@ -270,11 +271,11 @@ export function AIConfigsDataTableList({
     {
       id: "actions",
       enableSorting: false,
-      header: "Hành động",
+      header: () => <div>Hành động</div>,
       cell: ({ row }) => {
         const config = row.original;
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-centergap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -358,7 +359,17 @@ export function AIConfigsDataTableList({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className={cn(
+                        "px-4 py-3",
+                        header.id === "name" && "w-[30%] max-w-[30%]",
+                        header.id === "model_name" && "hidden md:table-cell",
+                        header.id === "language" && "hidden sm:table-cell",
+                        header.id === "created_at" && "hidden lg:table-cell",
+                      )}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -389,7 +400,18 @@ export function AIConfigsDataTableList({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        "px-4 py-3",
+                        cell.column.id === "name" && "w-[30%] max-w-[30%]",
+                        cell.column.id === "model_name" &&
+                          "hidden md:table-cell",
+                        cell.column.id === "language" && "hidden sm:table-cell",
+                        cell.column.id === "created_at" &&
+                          "hidden lg:table-cell",
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

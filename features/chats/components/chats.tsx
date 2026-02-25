@@ -115,7 +115,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
     if (!socket || !isConnected || !selectedConversation) return;
 
     // 1. Luôn join room theo conversation_id (để nhận tin nhắn khi chưa có contact_id)
-    const conversationRoom = `contact_${selectedConversation}`;
+    const conversationRoom = `conversation_${selectedConversation}`;
     socket.emit("join_room", { room: conversationRoom });
 
     // 2. Nếu đã có contact_id thì join thêm room theo contact_id
@@ -175,7 +175,9 @@ export function Chat({ conversations, messages, users }: ChatProps) {
         if (data.role === "bot") {
           setIsBotResponding(false); // Bot finished responding
         } else if (data.role === "customer" || data.role === "user") {
-          setIsBotResponding(true); // User sent message, Bot starts responding
+          if (currentConversation?.ai_active) {
+            setIsBotResponding(true); // User sent message, Bot starts responding
+          }
         }
       }
     };
@@ -287,7 +289,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
 
     return Array.from(uniqueMap.values()).sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
   }, [selectedConversation, apiMessages, realtimeMessages]);
 
@@ -370,7 +372,6 @@ export function Chat({ conversations, messages, users }: ChatProps) {
     }
   };
 
-  console.log("[handleSendMessage] Updated conversations:", messagesData);
   return (
     <TooltipProvider delayDuration={0}>
       <div className="h-[calc(95vh-180px)] min-h-[500px] flex rounded-xl border shadow-sm overflow-hidden bg-background">
@@ -451,11 +452,21 @@ export function Chat({ conversations, messages, users }: ChatProps) {
                       <MessageList
                         key={selectedConversation}
                         messages={currentMessages}
-                        isTyping={isTyping || isBotResponding}
-                        isTypingRight={isBotResponding}
-                        typingRole={isBotResponding ? "bot" : undefined}
+                        isTyping={
+                          isTyping ||
+                          (isBotResponding && !!currentConversation?.ai_active)
+                        }
+                        isTypingRight={
+                          isBotResponding && !!currentConversation?.ai_active
+                        }
+                        typingRole={
+                          isBotResponding && !!currentConversation?.ai_active
+                            ? "bot"
+                            : undefined
+                        }
                         typingText={
-                          isBotResponding ? (
+                          isBotResponding &&
+                          !!currentConversation?.ai_active ? (
                             <div className="flex items-center gap-2 mb-1 flex-row-reverse">
                               <span className="text-sm font-semibold text-foreground">
                                 Bot đang phản hồi...

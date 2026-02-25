@@ -28,11 +28,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (
-    name_tenant: string,
-    username: string,
-    password: string,
-  ) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   // Permission management
   permissions: Permission[];
@@ -108,27 +104,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [permissions],
   );
 
-  const login = useCallback(
-    async (name_tenant: string, username: string, password: string) => {
-      const response = await loginApi({ name_tenant, username, password });
+  const login = useCallback(async (username: string, password: string) => {
+    const response = await loginApi({ username, password });
 
-      // Save tokens
-      setTokens(response.data.access_token, response.data.refresh_token);
+    // Save tokens
+    setTokens(response.data.access_token, response.data.refresh_token);
 
-      // Decode and set user from token
-      const userData = decodeToken(response.data.access_token);
-      if (userData) {
-        setUser({
-          id: userData.id || "",
-          name: userData.name || username,
-          email: userData.email || "",
-          avatar: "",
-          role: userData.role || "user",
-        });
-      }
-    },
-    [],
-  );
+    // Decode and set user from token
+    const userData = decodeToken(response.data.access_token);
+    if (userData) {
+      setUser({
+        id: userData.id || "",
+        name: userData.name || username,
+        email: userData.email || "",
+        avatar: "",
+        role: userData.role || "user",
+      });
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     try {
