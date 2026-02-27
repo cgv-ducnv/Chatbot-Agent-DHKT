@@ -5,11 +5,19 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Cookie Configuration
 // Cấu hình cookie với các options bảo mật
+// LƯU Ý:
+// - Trên môi trường production chạy HTTPS: secure = true
+// - Trên server HTTP (demo / staging chưa có SSL): secure = false, nếu không browser sẽ KHÔNG lưu cookie
+const isHttpsRuntime =
+  typeof window !== "undefined"
+    ? window.location.protocol === "https:"
+    : process.env.NODE_ENV === "production";
+
 const COOKIE_OPTIONS: Cookies.CookieAttributes = {
   // Số ngày cookie tồn tại (7 ngày)
   expires: 7,
-  // Chỉ gửi cookie qua HTTPS trên production
-  secure: process.env.NODE_ENV === "production",
+  // Chỉ gửi cookie qua HTTPS khi thực sự đang chạy HTTPS
+  secure: isHttpsRuntime,
   // Chống CSRF attacks - "lax" cho phép cookie được gửi trong top-level navigation
   // Vẫn bảo mật nhưng tránh vấn đề race condition khi logout/redirect
   sameSite: "lax",
