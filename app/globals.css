@@ -135,7 +135,8 @@
     font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   }
   :root.font-system body {
-    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    font-family:
+      ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   }
 }
@@ -160,8 +161,16 @@
   }
 
   .faded-bottom {
-    mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+    mask-image: linear-gradient(
+      to bottom,
+      black calc(100% - 3rem),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black calc(100% - 3rem),
+      transparent 100%
+    );
   }
 
   .star-shape {

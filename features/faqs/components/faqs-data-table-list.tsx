@@ -201,9 +201,9 @@ export function FAQsDataTableList({
       },
       cell: ({ row }) => {
         return (
-          <div className="flex flex-col max-w-[400px] gap-1">
+          <div className="flex flex-col gap-1 max-w-[500px]">
             <span
-              className="font-medium truncate"
+              className="font-medium text-sm leading-relaxed line-clamp-3 break-words whitespace-normal"
               title={row.original.question}
             >
               {row.original.question}
@@ -222,7 +222,7 @@ export function FAQsDataTableList({
     },
     {
       accessorKey: "aliases",
-      header: "Aliases",
+      header: "Từ khóa",
       cell: ({ row }) => {
         const aliases = row.original.aliases || [];
         const limit = 4;
@@ -233,12 +233,12 @@ export function FAQsDataTableList({
           return <span className="text-muted-foreground">-</span>;
 
         return (
-          <div className="flex flex-wrap gap-1 max-w-[300px]">
+          <div className="flex flex-wrap gap-1 max-w-[300px] line-clamp-2">
             {displayedAliases.map((alias, index) => (
               <Badge
                 key={index}
                 variant="outline"
-                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 font-normal text-[10px] px-1 py-0 h-5 truncate max-w-[100px]"
+                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 font-normal text-[10px] px-1 py-0 h-5"
                 title={alias}
               >
                 {alias}
@@ -280,8 +280,8 @@ export function FAQsDataTableList({
       accessorKey: "answer",
       header: "Câu trả lời",
       cell: ({ row }) => (
-        <div className="max-w-[300px] truncate" title={row.original.answer}>
-          <span className="text-sm text-muted-foreground">
+        <div className="w-full max-w-[500px]" title={row.original.answer}>
+          <span className="text-sm text-muted-foreground leading-relaxed line-clamp-3 break-words whitespace-normal">
             {row.original.answer}
           </span>
         </div>

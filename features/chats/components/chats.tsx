@@ -14,6 +14,8 @@ import { MessageList } from "./message-list";
 import { useGetConversationByIdInfinite } from "@/hooks/conversations/use-conversations";
 import { useReplyMessage } from "@/hooks/messages/use-messages";
 import { useSocket } from "@/contexts/socket-context";
+import { useContactsByIds } from "@/hooks/contacts/use-contacts";
+import type { Contacts } from "@/services/contacts/services";
 import { EmptyData } from "@/components/empty-data";
 
 interface ChatProps {
@@ -38,6 +40,8 @@ export function Chat({ conversations, messages, users }: ChatProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isBotResponding, setIsBotResponding] = useState(false);
+  const [cachedConversation, setCachedConversation] =
+    useState<ChatConversation | null>(null);
 
   // WebSocket connection
   const { socket, isConnected } = useSocket();
@@ -51,7 +55,6 @@ export function Chat({ conversations, messages, users }: ChatProps) {
     isLoading: isLoadingMessages,
     fetchNextPage,
     hasNextPage,
-    refetch,
     isFetchingNextPage,
   } = useGetConversationByIdInfinite(
     selectedConversation ? Number(selectedConversation) : 0,
@@ -83,7 +86,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
             isEdited: false,
             reactions: [],
             replyTo: null,
-            role: msg.role as "bot" | "customer" | "staff",
+            role: msg.role as "bot" | "customer" | "staff" | "user",
             user: msg.user,
             contact_id: msg.contact_id,
           };
@@ -99,18 +102,16 @@ export function Chat({ conversations, messages, users }: ChatProps) {
     (conv) => conv.id === selectedConversation,
   );
 
-  // Debug: Log contact changes
-  // useEffect(() => {
-  //   const contactId = apiMessages[0]?.contact_id;
-  //   console.log("[Chat Debug] Contact Context Changed:", {
-  //     conversationId: selectedConversation,
-  //     contactId: contactId || "Not found in messages",
-  //     totalMessages: apiMessages.length,
-  //     conversationName: currentConversation?.name,
-  //   });
-  // }, [selectedConversation, apiMessages, currentConversation]);
+  // Keep the last selected conversation visible in header
+  // while the sidebar list is being filtered by search.
+  useEffect(() => {
+    if (currentConversation) {
+      setCachedConversation(currentConversation);
+    }
+  }, [currentConversation]);
 
-  // WebSocket event handlers
+  const headerConversation = currentConversation ?? cachedConversation;
+
   useEffect(() => {
     if (!socket || !isConnected || !selectedConversation) return;
 
@@ -158,7 +159,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
           isEdited: false,
           reactions: [],
           replyTo: null,
-          role: data.role as "bot" | "customer" | "staff",
+          role: data.role as "bot" | "customer" | "staff" | "user",
           user: data.user,
           contact_id: data.contact_id,
         };
@@ -211,10 +212,10 @@ export function Chat({ conversations, messages, users }: ChatProps) {
       socket.offAny();
 
       socket.off("staff_message", handleStaffMessage);
-      socket.off("new_message", handleStaffMessage);
+      // socket.off("new_message", handleStaffMessage);
       socket.off("user_message", handleStaffMessage);
       socket.off("bot_message", handleStaffMessage);
-      socket.off("message", handleStaffMessage);
+      // socket.off("message", handleStaffMessage);
       socket.off("user_typing", handleUserTyping);
     };
   }, [
@@ -293,6 +294,73 @@ export function Chat({ conversations, messages, users }: ChatProps) {
     );
   }, [selectedConversation, apiMessages, realtimeMessages]);
 
+  // Chỉ role = "user" mới get contact; role = "customer" dùng luôn message.user (fullname, username, email)
+  const contactIdsToFetch = useMemo(() => {
+    const ids = new Set<number>();
+    currentMessages.forEach((msg) => {
+      if (msg.role === "user" && msg.contact_id != null) {
+        ids.add(Number(msg.contact_id));
+      }
+    });
+    return Array.from(ids);
+  }, [currentMessages]);
+
+  // Gọi nhiều lần: GET /contacts?id=1, GET /contacts?id=2, ...
+  const contactQueries = useContactsByIds(contactIdsToFetch);
+
+  // Map contact_id -> Contacts (mỗi result là GET /contacts?id=x; axios response.data.data.data = contact)
+  const contactsMap = useMemo(() => {
+    const map: Record<number, Contacts> = {};
+    contactQueries.forEach((result, i) => {
+      const contactId = contactIdsToFetch[i];
+      const apiBody = (
+        result.data as { data?: { data?: Contacts } } | undefined
+      )?.data;
+      const contact = apiBody?.data;
+      if (contactId && contact) map[contactId] = contact;
+    });
+    return map;
+  }, [contactQueries, contactIdsToFetch]);
+
+  // Role "user": gắn thông tin contact vừa get vào message.user để MessageList dùng chung một luồng (không gắn cứng)
+  const messagesToShow = useMemo(() => {
+    return currentMessages.map((msg) => {
+      const contactId =
+        msg.contact_id != null ? Number(msg.contact_id) : undefined;
+      if (msg.role === "user" && contactId != null && contactsMap[contactId]) {
+        const contact = contactsMap[contactId];
+        return {
+          ...msg,
+          user: {
+            id: contact.id,
+            username: contact.username,
+            sdt: contact.sdt,
+            email: contact.email,
+          },
+        };
+      }
+      return msg;
+    });
+  }, [currentMessages, contactsMap]);
+
+  // Lấy số điện thoại từ message role = "user" gần nhất (đã enrich từ contact)
+  const currentUserPhone = useMemo(() => {
+    const reversed = [...messagesToShow].reverse();
+    const lastUserMsg = reversed.find(
+      (msg) => msg.role === "user" && msg.user?.sdt,
+    );
+    return lastUserMsg?.user?.sdt;
+  }, [messagesToShow]);
+
+  // Lấy email từ message role = "user" gần nhất (đã enrich từ contact)
+  const currentUserEmail = useMemo(() => {
+    const reversed = [...messagesToShow].reverse();
+    const lastUserMsg = reversed.find(
+      (msg) => msg.role === "user" && msg.user?.email,
+    );
+    return lastUserMsg?.user?.email;
+  }, [messagesToShow]);
+
   const handleSendMessage = useCallback(
     async (content: string) => {
       if (!selectedConversation) return;
@@ -321,7 +389,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
             isEdited: false,
             reactions: [],
             replyTo: null,
-            role: responseData.role as "bot" | "customer" | "staff",
+            role: responseData.role as "bot" | "customer" | "staff" | "user",
             user: responseData.user,
             contact_id: responseData.contact_id,
           };
@@ -392,7 +460,7 @@ export function Chat({ conversations, messages, users }: ChatProps) {
         `}
         >
           <div className="lg:hidden p-4 border-b flex items-center justify-between bg-background">
-            <h2 className="text-lg font-semibold">Messages</h2>
+            <h2 className="text-lg font-semibold">Danh sách tin nhắn</h2>
             <Button
               variant="ghost"
               size="sm"
@@ -427,8 +495,10 @@ export function Chat({ conversations, messages, users }: ChatProps) {
 
             <div className="flex-1">
               <ChatHeader
-                conversation={currentConversation || null}
+                conversation={headerConversation || null}
                 users={users}
+                phoneNumber={currentUserPhone}
+                emailAddress={currentUserEmail}
                 onToggleMute={handleToggleMute}
               />
             </div>
@@ -448,10 +518,10 @@ export function Chat({ conversations, messages, users }: ChatProps) {
                   </div>
                 ) : (
                   <>
-                    {currentMessages.length > 0 ? (
+                    {messagesToShow.length > 0 ? (
                       <MessageList
                         key={selectedConversation}
-                        messages={currentMessages}
+                        messages={messagesToShow}
                         isTyping={
                           isTyping ||
                           (isBotResponding && !!currentConversation?.ai_active)
@@ -499,10 +569,10 @@ export function Chat({ conversations, messages, users }: ChatProps) {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2">
-                    Welcome to Chat
+                    Chào mừng đến với đoạn tin nhắn
                   </h3>
                   <p className="text-muted-foreground">
-                    Select a conversation to start messaging
+                    Bắt đầu trò chuyện để kết nối với khách hàng.
                   </p>
                 </div>
               </div>

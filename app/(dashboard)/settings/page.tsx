@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { ContentSection } from "@/components/content-section";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -12,18 +14,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import * as LucideIcons from "lucide-react";
+import type { ElementType } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useMe } from "@/hooks/user/use-me";
+import { PERMISSIONS_META } from "@/constants/permission-with-icon";
 
 const profileFormSchema = z.object({
   username: z
@@ -33,13 +31,10 @@ const profileFormSchema = z.object({
   email: z
     .string({ message: "Please select an email to display." })
     .email({ message: "Please enter a valid email address." }),
-  bio: z.string().max(160).min(4),
-  urls: z
-    .object({
-      website: z.string().optional().or(z.literal("")),
-      twitter: z.string().optional().or(z.literal("")),
-    })
-    .optional(),
+  fullname: z.string().min(1, { message: "Fullname is required." }),
+  is_active: z.string(),
+  role: z.string().min(1, { message: "Role is required." }),
+  permissions: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -47,19 +42,43 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 const defaultValues: Partial<ProfileFormValues> = {
   username: "",
   email: "",
-  bio: "I'm a software developer.",
-  urls: {
-    website: "",
-    twitter: "",
-  },
+  fullname: "",
+  is_active: "",
+  role: "",
+  permissions: "",
 };
 
 export default function SettingsProfilePage() {
+  const { data: userProfile } = useMe();
+
+  const userPermissionMetas =
+    userProfile && Array.isArray(userProfile.permissions)
+      ? Object.values(PERMISSIONS_META).filter((meta) =>
+          userProfile.permissions?.includes(meta.value),
+        )
+      : [];
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  // Đổ dữ liệu người dùng hiện tại vào form khi đã load được
+  useEffect(() => {
+    if (!userProfile) return;
+
+    form.reset({
+      username: userProfile.fullname || userProfile.username || "",
+      email: userProfile.email || "",
+      fullname: userProfile.fullname || "",
+      is_active: String(userProfile.is_active ?? ""),
+      role: userProfile.role || "",
+      permissions: Array.isArray(userProfile.permissions)
+        ? userProfile.permissions.join(", ")
+        : "",
+    });
+  }, [userProfile, form]);
 
   function onSubmit(data: ProfileFormValues) {
     toast.message("Profile updated successfully!", {
@@ -75,8 +94,8 @@ export default function SettingsProfilePage() {
 
   return (
     <ContentSection
-      title="Profile"
-      desc="This is how others will see you on the site."
+      title="Hồ sơ người dùng"
+      desc="Đây là các thông tin cá nhân trên hệ thống của bạn."
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-4">
@@ -90,8 +109,7 @@ export default function SettingsProfilePage() {
                   <Input placeholder="shadcn" {...field} />
                 </FormControl>
                 <FormDescription>
-                  This is your public display name. It can be your real name or
-                  a pseudonym.
+                  Tên đăng nhập của bạn trên hệ thống.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -103,82 +121,97 @@ export default function SettingsProfilePage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Email</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a verified email to display" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="m@example.com">m@example.com</SelectItem>
-                    <SelectItem value="m@google.com">m@google.com</SelectItem>
-                    <SelectItem value="m@support.com">m@support.com</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Input placeholder="you@example.com" {...field} />
+                </FormControl>
                 <FormDescription>
-                  You can manage verified email addresses in your email
-                  settings.
+                  Email hiện tại được lấy từ tài khoản của bạn.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="bio"
+            name="fullname"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Bio</FormLabel>
+                <FormLabel>Họ và tên</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Tell us a little bit about yourself"
-                    className="resize-none"
-                    {...field}
-                  />
+                  <Input placeholder="Nguyễn Văn A" {...field} />
                 </FormControl>
                 <FormDescription>
-                  You can <span>@mention</span> other users and organizations to
-                  link to them.
+                  Họ tên đầy đủ hiển thị trên hệ thống.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="urls.website"
-            render={({ field }) => (
+            name="is_active"
+            render={() => (
               <FormItem>
-                <FormLabel>Website</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://example.com" {...field} />
-                </FormControl>
+                <FormLabel>Trạng thái hoạt động</FormLabel>
+                <div className="mt-1">
+                  <Badge
+                    variant={userProfile?.is_active ? "outline" : "destructive"}
+                    className={userProfile?.is_active ? "border-green-500 text-green-600" : ""}
+                  >
+                    {userProfile?.is_active ? "Đang hoạt động" : "Ngừng hoạt động"}
+                  </Badge>
+                </div>
                 <FormDescription>
-                  Add a link to your website or portfolio.
+                  Trạng thái được lấy từ hệ thống, không thể chỉnh sửa tại đây.
                 </FormDescription>
-                <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="urls.twitter"
-            render={({ field }) => (
+            name="role"
+            render={() => (
               <FormItem>
-                <FormLabel>Twitter</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://twitter.com/username"
-                    {...field}
-                  />
-                </FormControl>
+                <FormLabel>Vai trò & quyền hạn</FormLabel>
+                <div className="mt-1 space-y-2">
+                  <div>
+                    <Badge variant="outline" className="border-blue-500 text-blue-600">
+                      <LucideIcons.ShieldCheck className="mr-1 size-3.5" />
+                      {userProfile?.role || "N/A"}
+                    </Badge>
+                  </div>
+
+                  {userPermissionMetas.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                      {userPermissionMetas.map((meta) => {
+                        const Icon =
+                          (LucideIcons[meta.icon as keyof typeof LucideIcons] as ElementType) ??
+                          (LucideIcons.KeyRound as ElementType);
+
+                        return (
+                          <Badge
+                            key={meta.value}
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            <Icon className="size-3.5" />
+                            <span>{meta.label}</span>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Tài khoản hiện chưa được gán quyền cụ thể.
+                    </p>
+                  )}
+                </div>
                 <FormDescription>
-                  Add a link to your Twitter profile.
+                  Thông tin role và nhóm quyền được cấu hình bởi quản trị viên.
                 </FormDescription>
-                <FormMessage />
               </FormItem>
             )}
           />

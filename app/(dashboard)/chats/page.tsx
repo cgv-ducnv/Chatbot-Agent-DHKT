@@ -8,16 +8,19 @@ import {
   ChatMessage,
   ChatUser,
 } from "@/features/chats/utils/types";
+import { useChat } from "@/features/chats/utils/use-chat";
 import { AppBreadcrumb } from "@/components/breadcrumb";
 import { Home } from "lucide-react";
 import { IconMessages } from "@tabler/icons-react";
 import { useGetPrioritizedConversationsInfinite } from "@/hooks/conversations/use-conversations";
 import { useMemo } from "react";
-import { useSocket } from "@/contexts/socket-context";
 
 export default function ChatsPage() {
+  const { searchQuery } = useChat();
+
   const { data, isLoading, isError } = useGetPrioritizedConversationsInfinite({
     page_size: 50,
+    search: searchQuery || undefined,
   });
 
   // Transform API data to ChatConversation format
@@ -52,7 +55,9 @@ export default function ChatsPage() {
     });
   }, [data]);
 
-  if (isLoading) {
+  // Chỉ loading full-screen ở lần tải đầu tiên.
+  // Khi search, giữ UI cũ để tránh nháy lại toàn bộ khung chat.
+  if (isLoading && !data) {
     return (
       <>
         <div className="px-4 py-4 lg:px-6">

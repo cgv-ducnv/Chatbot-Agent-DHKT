@@ -247,12 +247,6 @@ export function MessageInput({
           </Tooltip>
         </TooltipProvider>
       </div>
-
-      {isTyping && (
-        <div className="text-xs text-muted-foreground mt-2">
-          Bạn đang nhập tin nhắn...
-        </div>
-      )}
     </div>
   );
 }

@@ -11,9 +11,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Bell, Monitor, Palette, UserCog, Wrench } from "lucide-react";
+import { Bell, Home, Monitor, Palette, UserCog, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AppBreadcrumb } from "@/components/breadcrumb";
 
 const sidebarNavItems = [
   {
@@ -21,23 +22,23 @@ const sidebarNavItems = [
     href: "/settings",
     icon: UserCog,
   },
+  // {
+  //   title: "Account",
+  //   href: "/settings/account",
+  //   icon: Wrench,
+  // },
   {
-    title: "Account",
-    href: "/settings/account",
-    icon: Wrench,
-  },
-  {
-    title: "Appearance",
+    title: "Giao diện",
     href: "/settings/appearance",
     icon: Palette,
   },
+  // {
+  //   title: "Notifications",
+  //   href: "/settings/notifications",
+  //   icon: Bell,
+  // },
   {
-    title: "Notifications",
-    href: "/settings/notifications",
-    icon: Bell,
-  },
-  {
-    title: "Display",
+    title: "Hiển thị",
     href: "/settings/display",
     icon: Monitor,
   },
@@ -134,14 +135,20 @@ export default function SettingsLayout({
   return (
     <div className="-m-4 flex h-[calc(100vh-4rem)] flex-col">
       <div className="shrink-0 px-4 pt-6 lg:px-6">
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Settings
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and set e-mail preferences.
-          </p>
-        </div>
+        <AppBreadcrumb
+          items={[
+            {
+              label: "Dashboard",
+              href: "/dashboard",
+              icon: <Home className="size-4" />,
+            },
+            {
+              label: "Cài đặt",
+              href: "/settings",
+              icon: <UserCog className="size-4" />,
+            },
+          ]}
+        />
         <Separator className="my-4 lg:my-6" />
         <div className="md:hidden">
           <SidebarNavMobile items={sidebarNavItems} />

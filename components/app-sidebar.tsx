@@ -43,15 +43,16 @@ export default function AppSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
-        {user && (
-          <NavUser
-            user={{
-              name: user.name,
-              email: user.email,
-              avatar: user.avatar || "",
-            }}
-          />
-        )}
+        <div className="w-full px-3 pb-3">
+          <div
+            className="rounded-xl border border-emerald-500/20 
+              bg-emerald-500/5 px-3 py-2 
+              text-[11px] text-muted-foreground text-center"
+          >
+            <div>Phát triển bởi CGV Telecom</div>
+            <div className="opacity-70">© {new Date().getFullYear()}</div>
+          </div>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </UISidebar>

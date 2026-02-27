@@ -340,6 +340,7 @@ export type NavigationRailFilterProps = {
   onColumnVisibilityChange?: (columnId: string, visible: boolean) => void;
   orientation?: "vertical" | "horizontal"; // Deprecated, use position
   position?: "top" | "bottom" | "left" | "right";
+  classNamePosition?: string;
   children?: ReactNode;
 };
 
@@ -396,6 +397,7 @@ export function NavigationRailFilter({
   onColumnVisibilityChange,
   orientation: propOrientation,
   position: propPosition,
+  classNamePosition: propClassNamePosition,
   children,
 }: NavigationRailFilterProps) {
   // Resolve effective position
@@ -576,9 +578,10 @@ export function NavigationRailFilter({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "flex items-center z-[10] p-2",
+              "flex items-center z-10 pt-[80px]",
+              propClassNamePosition,
               dockOrientation === "vertical"
-                ? "h-full flex-col justify-center"
+                ? "h-full flex-col justify-start"
                 : "w-full flex-row justify-center",
             )}
           >

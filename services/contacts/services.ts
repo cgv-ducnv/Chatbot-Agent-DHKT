@@ -15,10 +15,11 @@ export interface ApiResponse<T> {
 ===================== */
 export interface Contacts {
   id: number;
+  username?: string;
   sdt: string;
   email: string;
-  specialized: string;
-  session_id: string;
+  specialized: string | null;
+  session_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -49,6 +50,8 @@ export interface GetContactsParams {
   search?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+  /** Lọc theo 1 id: GET /contacts?id=1 (gọi nhiều lần nếu cần nhiều id) */
+  id?: number;
 }
 
 /* =====================

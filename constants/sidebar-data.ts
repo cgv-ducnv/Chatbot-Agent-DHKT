@@ -22,22 +22,16 @@ import {
   IconFingerprint,
   IconRobot,
 } from "@tabler/icons-react";
-import {
-  AudioWaveform,
-  Command,
-  GalleryVerticalEnd,
-  MailIcon,
-  Workflow,
-} from "lucide-react";
+import { Workflow } from "lucide-react";
 import { PERMISSIONS } from "@/constants/permission";
 import LogoHAU from "@/public/logocon/Logo_HAU.png";
 
 export const sidebarData: SidebarData = {
   teams: [
     {
-      name: "Nhóm kế toán",
+      name: "Đại học kiến trúc Hà Nội",
       logo: LogoHAU,
-      plan: "Đại học kiến trúc Hà Nội",
+      plan: "University of Architecture",
     },
   ],
   navGroups: [
@@ -96,6 +90,12 @@ export const sidebarData: SidebarData = {
         //   icon: IconChecklist,
         // },
         {
+          title: "Danh sách trò chuyện",
+          url: "/chats",
+          // badge: "3",
+          icon: IconMessages,
+        },
+        {
           title: "Quản lý agent",
           url: "/ai-configs",
           icon: IconRobot,
@@ -137,17 +137,12 @@ export const sidebarData: SidebarData = {
           icon: IconBuilding,
           permissions: [PERMISSIONS.VIEW_DEPARTMENTS],
         },
-        {
-          title: "Chats",
-          url: "/chats",
-          badge: "3",
-          icon: IconMessages,
-        },
-        {
-          title: "Calendar",
-          url: "/calendar",
-          icon: IconCalendar,
-        },
+
+        // {
+        //   title: "Calendar",
+        //   url: "/calendar",
+        //   icon: IconCalendar,
+        // },
         // {
         //   title: "AI Chat",
         //   url: "/ai-chat",
@@ -271,27 +266,27 @@ export const sidebarData: SidebarData = {
           // badge: "Coming Soon",
           items: [
             {
-              title: "Profile",
+              title: "Hồ sơ người dùng",
               url: "/settings",
               icon: IconUserCog,
             },
+            // {
+            //   title: "Tài khoản",
+            //   url: "/settings/account",
+            //   icon: IconTool,
+            // },
             {
-              title: "Account",
-              url: "/settings/account",
-              icon: IconTool,
-            },
-            {
-              title: "Appearance",
+              title: "Giao diện",
               url: "/settings/appearance",
               icon: IconPalette,
             },
+            // {
+            //   title: "Thông báo",
+            //   url: "/settings/notifications",
+            //   icon: IconNotification,
+            // },
             {
-              title: "Notifications",
-              url: "/settings/notifications",
-              icon: IconNotification,
-            },
-            {
-              title: "Display",
+              title: "Hiển thị",
               url: "/settings/display",
               icon: IconBrowserCheck,
             },

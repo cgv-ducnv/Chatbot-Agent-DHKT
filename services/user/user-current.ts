@@ -4,12 +4,13 @@ export interface UserCurrentResponse {
   status: number;
   message: string;
   data: {
-    id: string;
+    id: number;
     username: string;
     email: string;
     fullname: string;
     is_active: number;
     role: string;
+    level: string;
     tenant_id: string;
     permissions: string[];
   };

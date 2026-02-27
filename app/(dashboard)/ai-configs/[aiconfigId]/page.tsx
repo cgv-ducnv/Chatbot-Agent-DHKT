@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useFaqs, useDeleteFaq } from "@/hooks/faqs/use-faqs";
 import type { FAQ } from "@/features/faqs/utils/schema";
+import { useQueryParam, NumberParam, withDefault } from "use-query-params";
 
 import {
   Dialog,
@@ -122,12 +123,17 @@ export default function AIConfigDetailPage() {
     Record<string, boolean>
   >({});
 
-  // Filter state for FAQs
+  // Filter + pagination state for FAQs
   const [faqsSearch, setFaqsSearch] = useState("");
   const [faqsSort, setFaqsSort] = useState<string | undefined>();
   const [faqsColumnVisibility, setFaqsColumnVisibility] = useState<
     Record<string, boolean>
   >({});
+  const [faqsPage] = useQueryParam("faq_page", withDefault(NumberParam, 1));
+  const [faqsPageSize] = useQueryParam(
+    "faq_page_size",
+    withDefault(NumberParam, 10),
+  );
 
   // Parse sort value to sort_by and sort_order
   const parseSort = (sortValue?: string) => {
@@ -156,6 +162,8 @@ export default function AIConfigDetailPage() {
   // Fetch FAQs for this AI config
   const { data: faqsResponse, isLoading: isLoadingFaqs } = useFaqs({
     ai_config_id: aiconfigId,
+    page: faqsPage,
+    page_size: faqsPageSize,
     search: faqsSearch || undefined,
     sort_by: faqsSortParams.sort_by,
     sort_order: faqsSortParams.sort_order,
@@ -460,6 +468,7 @@ export default function AIConfigDetailPage() {
                 columnOptions={currentColumnOptions}
                 columnVisibility={currentColumnVisibility}
                 onColumnVisibilityChange={handleColumnVisibilityChange}
+                classNamePosition="px-2"
               >
                 <div className="p-6">{renderFeatureContent()}</div>
               </NavigationRailFilter>

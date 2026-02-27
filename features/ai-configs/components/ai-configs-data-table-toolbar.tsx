@@ -211,8 +211,6 @@ export function DataTableToolbar<TData>({
   table,
   title = "Danh sách agent",
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
-
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
       <div>

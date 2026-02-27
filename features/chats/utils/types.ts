@@ -36,12 +36,13 @@ export interface ChatMessage {
   reactions: MessageReaction[];
   replyTo: string | null;
   attachments?: MessageAttachment[];
-  role?: "bot" | "customer" | "staff";
+  role?: "bot" | "customer" | "staff" | "user";
   user?: {
     id: number;
     username: string;
-    fullname: string;
-    email: string;
+    fullname?: string;
+    email?: string;
+    sdt?: string;
   };
   contact_id?: number;
 }

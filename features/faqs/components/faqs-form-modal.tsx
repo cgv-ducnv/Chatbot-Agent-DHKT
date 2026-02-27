@@ -201,7 +201,7 @@ export function FAQFormDialog({
           <DialogTitle>{isEditMode ? "Sửa FAQ" : "Thêm FAQ mới"}</DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? "Cập nhật thông tin FAQ. Nhấn lưu khi hoàn tất."
+              ? "Cập nhật thông tin FAQ."
               : "Tạo FAQ mới. Nhấn lưu khi hoàn tất."}
           </DialogDescription>
         </DialogHeader>
@@ -289,8 +289,8 @@ export function FAQFormDialog({
                         {aliases.map((alias, index) => (
                           <Badge
                             key={index}
-                            variant="secondary"
-                            className="pl-2 pr-1 py-1 gap-1"
+                            variant="outline"
+                            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 font-normal text-[10px] px-1 py-0 h-5"
                           >
                             {alias}
                             <button

@@ -2,6 +2,7 @@
 
 import { format, isToday, isYesterday } from "date-fns";
 import {
+  ArrowDown,
   Bot,
   CheckCheck,
   Copy,
@@ -32,7 +33,7 @@ import { cn } from "@/lib/utils";
 import type { ChatMessage } from "../utils/types";
 import { MessageAttachment } from "./message-attachment";
 
-interface MessageListProps {
+export interface MessageListProps {
   messages: ChatMessage[];
   isTyping?: boolean;
   loadMore: () => void;
@@ -54,6 +55,8 @@ const getRoleColor = (role?: string) => {
       return "bg-green-500";
     case "customer":
       return "bg-blue-500";
+    case "user":
+      return "bg-green-500";
     default:
       return "bg-gray-500";
   }
@@ -78,28 +81,22 @@ const getRoleBadge = (role?: string) => {
         label: "Customer",
         color: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
       };
+    case "user":
+      return {
+        label: "User",
+        color:
+          "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      };
     default:
       return null;
   }
 };
 
-// Generate initials from name
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-};
-
-// Get display name from message with role fallback
 const getUserName = (message: ChatMessage) => {
-  // If user info exists, use it
   if (message.user?.fullname) return message.user.fullname;
   if (message.user?.username) return message.user.username;
+  if (message.user?.email) return message.user.email;
 
-  // Fallback to role-based names
   switch (message.role) {
     case "bot":
       return "AI Assistant";
@@ -128,7 +125,6 @@ export function MessageList({
   ),
   isTypingRight = false,
   typingRole,
-  typingName,
 }: MessageListProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -267,21 +263,21 @@ export function MessageList({
   const formatMessageTime = (timestamp: string) => {
     const date = new Date(timestamp);
     if (isToday(date)) {
-      return format(date, "HH:mm");
+      return format(date, "hh:mm a");
     } else if (isYesterday(date)) {
-      return `Hôm qua ${format(date, "HH:mm")}`;
+      return `Hôm qua, ${format(date, "hh:mm a")}`;
+    } else if (date.getFullYear() === new Date().getFullYear()) {
+      return format(date, "dd/MM, hh:mm a");
     } else {
-      return format(date, "MMM d, HH:mm");
+      return format(date, "dd/MM/yyyy, hh:mm a");
     }
   };
 
   // Generate senderKey from message
   const getSenderKey = (message: ChatMessage) => {
-    return message.role === "bot"
-      ? "bot"
-      : message.user?.id
-        ? `user-${message.user.id}`
-        : "anonymous";
+    if (message.role === "bot") return "bot";
+    if (message.user?.id) return `${message.role}-${message.user.id}`;
+    return message.role ?? "anonymous";
   };
 
   const groupMessagesByDay = (msgs: ChatMessage[]) => {
@@ -310,18 +306,25 @@ export function MessageList({
       return "Hôm nay";
     } else if (isYesterday(date)) {
       return "Hôm qua";
+    } else if (date.getFullYear() === new Date().getFullYear()) {
+      return format(date, "dd/MM");
     } else {
-      return format(date, "EEEE, MMMM d");
+      return format(date, "dd/MM/yyyy");
     }
   };
 
-  const messageGroups = groupMessagesByDay(messages);
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShouldAutoScroll(true);
+  }, []);
 
+  const messageGroups = groupMessagesByDay(messages);
   return (
-    <ScrollArea
-      className="flex-1 h-full overflow-auto [overflow-anchor:none]"
-      ref={scrollAreaRef}
-    >
+    <div className="relative flex-1 h-full overflow-hidden">
+      <ScrollArea
+        className="h-full overflow-auto [overflow-anchor:none]"
+        ref={scrollAreaRef}
+      >
       <div className="space-y-4 py-4 px-4">
         {messageGroups.map((group) => (
           <div key={group.date}>
@@ -336,7 +339,6 @@ export function MessageList({
                 // Generate senderKey for this message
                 const senderKey = getSenderKey(message);
 
-                // Bot and Customer messages on the right, Staff on the left
                 const isRightSide =
                   message.role === "bot" || message.role === "customer";
 
@@ -390,82 +392,71 @@ export function MessageList({
 
                     <div
                       className={cn(
-                        "flex-1 max-w-[70%]",
-                        isRightSide && "flex flex-col items-end",
+                        "flex-1 max-w-[75%] flex flex-col",
+                        isRightSide ? "items-end" : "items-start",
                       )}
                     >
                       {showName && (
                         <div
                           className={cn(
-                            "flex items-center gap-2 mb-1",
-                            isRightSide && "flex-row-reverse",
+                            "mb-1 px-1",
+                            isRightSide && "text-right",
                           )}
                         >
-                          <span className="text-sm font-semibold text-foreground">
-                            {userName}
-                          </span>
-                          {roleBadge && (
-                            <span
-                              className={cn(
-                                "text-xs font-medium px-2 py-0.5 rounded-full",
-                                roleBadge.color,
-                              )}
-                            >
-                              {roleBadge.label}
+                          <div
+                            className={cn(
+                              "flex items-center gap-1.5",
+                              isRightSide && "flex-row-reverse",
+                            )}
+                          >
+                            <span className="text-xs font-semibold text-foreground/80">
+                              {userName}
                             </span>
-                          )}
+                            {roleBadge && (
+                              <span
+                                className={cn(
+                                  "text-[10px] font-medium px-1.5 py-0.5 rounded-full leading-none",
+                                  roleBadge.color,
+                                )}
+                              >
+                                {roleBadge.label}
+                              </span>
+                            )}
+                          </div>
+                          {message.role === "user" &&
+                            (message.user?.sdt || message.user?.email) && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 mt-0.5">
+                                {message.user.email && (
+                                  <span>{message.user.email}</span>
+                                )}
+                                {message.user.sdt && message.user.email && (
+                                  <span>·</span>
+                                )}
+                                {message.user.sdt && (
+                                  <span>{message.user.sdt}</span>
+                                )}
+                              </div>
+                            )}
                         </div>
                       )}
 
-                      <div className="relative group/message">
+                      <div className="relative group/message flex items-center gap-1">
                         <div
                           className={cn(
-                            "rounded-2xl px-4 py-2.5 text-sm break-words shadow-sm transition-all",
-                            message.role === "bot"
-                              ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md"
-                              : message.role === "customer"
-                                ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md"
+                            "rounded-2xl px-3.5 py-2 text-sm leading-relaxed w-fit max-w-full",
+                            message.role === "bot" ||
+                              message.role === "customer"
+                              ? "bg-primary/10 dark:bg-primary/15 border border-primary/20 text-foreground rounded-br-sm"
+                              : message.role === "user"
+                                ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-foreground rounded-bl-sm"
                                 : message.role === "staff"
-                                  ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-900 dark:text-green-100 rounded-bl-md"
-                                  : "bg-muted rounded-bl-md",
+                                  ? "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-foreground rounded-bl-sm"
+                                  : "bg-muted text-foreground rounded-bl-sm",
                           )}
                         >
-                          <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/message:opacity-100 transition-opacity z-10">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-6 rounded-full hover:bg-background/50 text-muted-foreground hover:text-foreground"
-                                >
-                                  <MoreVertical className="size-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align={isRightSide ? "start" : "end"}
-                              >
-                                <DropdownMenuItem className="cursor-pointer">
-                                  <Reply className="size-4" />
-                                  Reply
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer">
-                                  <Copy className="size-4" />
-                                  Copy
-                                </DropdownMenuItem>
-                                {message.role === "staff" && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                                      <Trash2 className="size-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          <p className="break-words">{message.content}</p>
+                          <p className="wrap-break-word whitespace-pre-wrap">
+                            {message.content}
+                          </p>
 
                           {message.attachments &&
                             message.attachments.length > 0 && (
@@ -479,43 +470,84 @@ export function MessageList({
                                 ))}
                               </div>
                             )}
-
-                          {message.reactions.length > 0 && (
-                            <div className="flex gap-1 mt-2">
-                              {message.reactions.map((reaction, idx) => (
-                                <div
-                                  key={idx}
-                                  className={cn(
-                                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border cursor-pointer",
-                                    "bg-background/90 backdrop-blur-sm shadow-sm",
-                                  )}
-                                >
-                                  <span>{reaction.emoji}</span>
-                                  <span className="text-muted-foreground">
-                                    {reaction.count}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <div
-                            className={cn(
-                              "flex items-center gap-1 mt-1 text-xs opacity-70",
-                              isRightSide ? "justify-end" : "",
-                            )}
-                          >
-                            <span>{formatMessageTime(message.timestamp)}</span>
-                            {message.isEdited && (
-                              <span className="italic">(edited)</span>
-                            )}
-                            {message.role === "staff" && (
-                              <div className="flex">
-                                <CheckCheck className="size-3" />
-                              </div>
-                            )}
-                          </div>
                         </div>
+
+                        <div
+                          className={cn(
+                            "opacity-0 group-hover/message:opacity-100 transition-opacity shrink-0",
+                            isRightSide && "order-first",
+                          )}
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-6 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted"
+                              >
+                                <MoreVertical className="size-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align={isRightSide ? "start" : "end"}
+                            >
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Reply className="size-4" />
+                                Phản hồi
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Copy className="size-4" />
+                                Sao chép
+                              </DropdownMenuItem>
+                              {message.role === "staff" && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                                    <Trash2 className="size-4" />
+                                    Xóa
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+
+                      {message.reactions.length > 0 && (
+                        <div
+                          className={cn(
+                            "flex gap-1 mt-1 px-1",
+                            isRightSide && "justify-end",
+                          )}
+                        >
+                          {message.reactions.map((reaction, idx) => (
+                            <button
+                              type="button"
+                              key={idx}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
+                            >
+                              <span>{reaction.emoji}</span>
+                              <span className="text-muted-foreground">
+                                {reaction.count}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div
+                        className={cn(
+                          "flex items-center gap-1 mt-0.5 px-1 text-[10px] text-muted-foreground/60",
+                          isRightSide && "flex-row-reverse",
+                        )}
+                      >
+                        <span>{formatMessageTime(message.timestamp)}</span>
+                        {message.isEdited && (
+                          <span className="italic">(đã sửa)</span>
+                        )}
+                        {message.role === "staff" && (
+                          <CheckCheck className="size-3" />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -595,5 +627,17 @@ export function MessageList({
         <div ref={bottomRef} />
       </div>
     </ScrollArea>
+
+      {!shouldAutoScroll && (
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={scrollToBottom}
+          className="absolute bottom-4 right-4 z-20 size-9 rounded-full shadow-lg border bg-background/90 backdrop-blur-sm hover:bg-background text-muted-foreground hover:text-foreground transition-all"
+        >
+          <ArrowDown className="size-4" />
+        </Button>
+      )}
+    </div>
   );
 }

@@ -1,11 +1,8 @@
 "use client";
 
 import {
-  AlertCircle,
   Filter,
-  Hash,
   MoreVertical,
-  Pin,
   Search,
   Settings,
   UserPlus,
@@ -13,7 +10,6 @@ import {
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -202,17 +198,12 @@ interface ConversationListProps {
 
 export function ChatConversationList({
   conversations,
-  users,
   selectedConversation,
   onSelectConversation,
 }: ConversationListProps) {
   const { searchQuery, setSearchQuery } = useChat();
 
-  const filteredConversations = conversations.filter((conversation) =>
-    conversation.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const sortedConversations = filteredConversations.sort((a, b) => {
+  const sortedConversations = [...conversations].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
 
@@ -239,16 +230,16 @@ export function ChatConversationList({
           <DropdownMenuContent align="end">
             <DropdownMenuItem className="cursor-pointer">
               <UserPlus className="size-4 mr-2" />
-              New Chat
+              Chat mới
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">
               <Filter className="size-4 mr-2" />
-              Filter Messages
+              Lọc tin nhắn
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer">
               <Settings className="size-4 mr-2" />
-              Chat Settings
+              Cài đặt trò chuyện
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -260,7 +251,7 @@ export function ChatConversationList({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Tìm kiếm trò chuyện..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 cursor-text"

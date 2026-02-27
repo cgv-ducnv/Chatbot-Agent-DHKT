@@ -26,11 +26,12 @@ export const useContact = (id: number) => {
   });
 };
 
+/** Gọi GET /contacts?id=1, GET /contacts?id=2,... (một request một id) */
 export const useContactsByIds = (ids: number[]) => {
   return useQueries({
     queries: ids.map((id) => ({
-      queryKey: ["contacts", id],
-      queryFn: () => contactsService.getContactsById(id),
+      queryKey: ["contacts", "list", id],
+      queryFn: () => contactsService.getContacts({ id }),
       enabled: !!id,
     })),
   });

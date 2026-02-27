@@ -240,42 +240,42 @@ export function DataTable({
         <span className="font-medium">{row.original.description}</span>
       ),
     },
-    {
-      accessorKey: "role_order",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Thứ tự
-            {column.getIsSorted() === "asc" ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : column.getIsSorted() === "desc" ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : (
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            )}
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const order = row.original.role_order;
+    // {
+    //   accessorKey: "role_order",
+    //   header: ({ column }) => {
+    //     return (
+    //       <Button
+    //         variant="ghost"
+    //         className="-ml-4 h-8 data-[state=open]:bg-accent"
+    //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    //       >
+    //         Thứ tự
+    //         {column.getIsSorted() === "asc" ? (
+    //           <ArrowUp className="ml-2 h-4 w-4" />
+    //         ) : column.getIsSorted() === "desc" ? (
+    //           <ArrowDown className="ml-2 h-4 w-4" />
+    //         ) : (
+    //           <ArrowUpDown className="ml-2 h-4 w-4" />
+    //         )}
+    //       </Button>
+    //     );
+    //   },
+    //   cell: ({ row }) => {
+    //     const order = row.original.role_order;
 
-        return (
-          <Badge
-            variant="secondary"
-            className={cn(
-              "min-w-8 justify-center rounded-full px-2 text-xs font-semibold",
-              getOrderBadgeColor(order),
-            )}
-          >
-            {order ?? "-"}
-          </Badge>
-        );
-      },
-    },
+    //     return (
+    //       <Badge
+    //         variant="secondary"
+    //         className={cn(
+    //           "min-w-8 justify-center rounded-full px-2 text-xs font-semibold",
+    //           getOrderBadgeColor(order),
+    //         )}
+    //       >
+    //         {order ?? "-"}
+    //       </Badge>
+    //     );
+    //   },
+    // },
 
     // {
     //   accessorKey: "tenant_id",

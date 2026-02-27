@@ -153,7 +153,7 @@ export function RoleFormDialog({
               />
 
               {/* Thứ tự vai trò */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="role_order"
                 render={({ field }) => (
@@ -178,7 +178,7 @@ export function RoleFormDialog({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Mô tả */}
               <FormField

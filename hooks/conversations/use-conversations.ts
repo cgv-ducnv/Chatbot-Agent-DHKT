@@ -98,6 +98,7 @@ export const useGetPrioritizedConversationsInfinite = (
 ) => {
   return useInfiniteQuery({
     queryKey: [...conversationKeys.prioritized(params), "infinite"],
+    placeholderData: (previousData) => previousData,
     queryFn: ({ pageParam = 1 }) =>
       conversationService.getConversationPrioritized({
         ...params,

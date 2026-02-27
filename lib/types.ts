@@ -2,7 +2,7 @@ import { LinkProps } from "next/link";
 import { StaticImageData } from "next/image";
 
 interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   avatar: string;

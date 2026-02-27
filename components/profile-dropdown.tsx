@@ -14,15 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { useMe } from "@/hooks/user/use-me";
+import { LogOut, User } from "lucide-react";
 
 export function ProfileDropdown() {
   const { user: authUser, logout } = useAuth();
   const { data: userProfile } = useMe();
-  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -90,27 +89,31 @@ export function ProfileDropdown() {
           <DropdownMenuItem asChild>
             <Link href="#">
               Thông tin người dùng
-              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+              <DropdownMenuShortcut>
+                <User className="size-4" />
+              </DropdownMenuShortcut>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
+          {/* <DropdownMenuItem asChild>
             <Link href="#">
               Thanh toán
               <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
+          </DropdownMenuItem> */}
+          {/* <DropdownMenuItem asChild>
             <Link href="#">
               Cài đặt
               <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>New Team</DropdownMenuItem>
+          </DropdownMenuItem> */}
+          {/* <DropdownMenuItem>New Team</DropdownMenuItem> */}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
-          Đăng xuất
-          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+          <span className="text-red-500">Đăng xuất</span>
+          <DropdownMenuShortcut>
+            <LogOut className="size-4 text-red-500" />
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = decodeToken(response.data.access_token);
     if (userData) {
       setUser({
-        id: userData.id || "",
+        id: userData.id as number,
         name: userData.name || username,
         email: userData.email || "",
         avatar: "",

@@ -1,18 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bell,
   BellOff,
   Info,
+  Mail,
   MoreVertical,
   Phone,
-  Search,
   Users,
   Video,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,11 +27,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
 import type { ChatConversation, ChatUser } from "../utils/types";
 
 interface ChatHeaderProps {
   conversation: ChatConversation | null;
   users: ChatUser[];
+  phoneNumber?: string | null;
+  emailAddress?: string | null;
   onToggleMute?: () => void;
   onToggleInfo?: () => void;
 }
@@ -39,66 +49,23 @@ interface ChatHeaderProps {
 export function ChatHeader({
   conversation,
   users,
+  phoneNumber,
+  emailAddress,
   onToggleMute,
   onToggleInfo,
 }: ChatHeaderProps) {
+  const router = useRouter();
+  const [isEmailHelpOpen, setIsEmailHelpOpen] = useState(false);
+
   if (!conversation) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Select a conversation to start chatting
+          Chọn một trò chuyện để bắt đầu trò chuyện
         </p>
       </div>
     );
   }
-
-  const getConversationUsers = () => {
-    if (conversation.type === "direct") {
-      return users.filter((user) =>
-        conversation.participants.includes(user.id),
-      );
-    }
-    return users.filter((user) => conversation.participants.includes(user.id));
-  };
-
-  const conversationUsers = getConversationUsers();
-  const primaryUser = conversationUsers[0];
-
-  // const getStatusText = () => {
-  //   if (conversation.type === "group") {
-  //     const onlineCount = conversationUsers.filter(
-  //       (user) => user.status === "online",
-  //     ).length;
-  //     return `${conversation.participants.length} members, ${onlineCount} online`;
-  //   } else if (primaryUser) {
-  //     switch (primaryUser.status) {
-  //       case "online":
-  //         return "Active now";
-  //       case "away":
-  //         return "Away";
-  //       case "offline":
-  //         return `Last seen ${new Date(primaryUser.lastSeen).toLocaleDateString()}`;
-  //       default:
-  //         return "";
-  //     }
-  //   }
-  //   return "";
-  // };
-
-  const getStatusColor = () => {
-    if (conversation.type === "group") return "text-muted-foreground";
-
-    switch (primaryUser?.status) {
-      case "online":
-        return "text-green-600";
-      case "away":
-        return "text-yellow-600";
-      case "offline":
-        return "text-muted-foreground";
-      default:
-        return "text-muted-foreground";
-    }
-  };
 
   return (
     <div className="flex items-center justify-between h-full">
@@ -139,38 +106,87 @@ export function ChatHeader({
       <div className="flex items-center gap-1">
         <TooltipProvider>
           {/* Search */}
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="cursor-pointer">
                 <Search className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Search in conversation</p>
+              <p>Tìm kiếm tin nhắn thoại</p>
             </TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
 
           {/* Phone call */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+                onClick={() => {
+                  if (phoneNumber) {
+                    if (typeof window !== "undefined") {
+                      window.location.href = `tel:${phoneNumber}`;
+                    }
+                  } else {
+                    router.push("/settings");
+                  }
+                }}
+              >
                 <Phone className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Voice call</p>
+              <p>Cuộc gọi thoại</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Email */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+                onClick={() => {
+                  if (!emailAddress) {
+                    router.push("/settings");
+                    return;
+                  }
+                  setIsEmailHelpOpen(true);
+                }}
+              >
+                <Mail className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Gửi email</p>
             </TooltipContent>
           </Tooltip>
 
           {/* Video call */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+                onClick={() => {
+                  if (phoneNumber) {
+                    if (typeof window !== "undefined") {
+                      window.location.href = `tel:${phoneNumber}`;
+                    }
+                  } else {
+                    router.push("/settings");
+                  }
+                }}
+              >
                 <Video className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Video call</p>
+              <p>Cuộc gọi video</p>
             </TooltipContent>
           </Tooltip>
 
@@ -187,7 +203,7 @@ export function ChatHeader({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Conversation info</p>
+              <p>Thông tin trò chuyện</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -204,35 +220,101 @@ export function ChatHeader({
               {conversation.isMuted ? (
                 <>
                   <Bell className="size-4 mr-2" />
-                  Unmute conversation
+                  Bật tiếng trò chuyện
                 </>
               ) : (
                 <>
                   <BellOff className="size-4 mr-2" />
-                  Mute conversation
+                  Tắt tiếng trò chuyện
                 </>
               )}
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+            {/* <DropdownMenuItem className="cursor-pointer">
               <Search className="size-4 mr-2" />
-              Search messages
-            </DropdownMenuItem>
+              Tìm kiếm tin nhắn
+            </DropdownMenuItem> */}
             {conversation.type === "group" && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer">
                   <Users className="size-4 mr-2" />
-                  Manage members
+                  Quản lý thành viên
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer text-destructive">
-              Delete conversation
+              Xóa trò chuyện
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Email help modal: hướng dẫn cấu hình ứng dụng mail và mở mailto */}
+      <Dialog open={isEmailHelpOpen} onOpenChange={setIsEmailHelpOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">
+              Gửi email cho khách hàng
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-sm">
+            {emailAddress && (
+              <div className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground break-all">
+                <span className="font-medium text-foreground mr-1">
+                  Email:
+                </span>
+                {emailAddress}
+              </div>
+            )}
+
+            <p>
+              Hệ thống sẽ mở ứng dụng email mặc định trên máy của bạn thông qua
+              liên kết <code>mailto:</code>.
+            </p>
+
+            <ul className="list-disc pl-4 space-y-1 text-xs text-muted-foreground">
+              <li>
+                Nếu không có ứng dụng nào mở, hãy kiểm tra phần{" "}
+                <span className="font-medium">Settings &gt; Default apps</span>{" "}
+                (hoặc Ứng dụng mặc định) của hệ điều hành.
+              </li>
+              <li>
+                Đặt Gmail Desktop, Outlook, hoặc ứng dụng mail khác làm ứng dụng
+                mặc định cho liên kết <code>mailto</code>.
+              </li>
+            </ul>
+          </div>
+
+          <DialogFooter className="mt-2 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setIsEmailHelpOpen(false)}
+            >
+              Đóng
+            </Button>
+            <Button
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => {
+                if (!emailAddress) {
+                  router.push("/settings");
+                  return;
+                }
+                if (typeof window !== "undefined") {
+                  window.location.href = `mailto:${emailAddress}`;
+                }
+                setIsEmailHelpOpen(false);
+              }}
+            >
+              Mở ứng dụng email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
