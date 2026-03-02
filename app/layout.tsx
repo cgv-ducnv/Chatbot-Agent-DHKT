@@ -31,8 +31,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Hệ thống Onmichannel",
-  description: "Bảng quản trị hệ thống đa kênh Onmichannel của CGV Telecom",
+  title: "Hệ thống Chatbot HAU",
+  description: "Bảng quản trị hệ thống Chatbot HAU của HAU",
   icons: {
     icon: "/logocon/logo_icon_1.png",
   },

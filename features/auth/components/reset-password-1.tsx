@@ -147,7 +147,7 @@ export default function ResetPassword1() {
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-semibold text-white">
-                Omichannel
+                Chatbot HAU
               </span>
               <span className="text-sm text-zinc-400">Admin Dashboard</span>
             </div>
@@ -243,7 +243,7 @@ export default function ResetPassword1() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white">
               OA
             </div>
-            <span className="text-lg font-semibold">Omichannel</span>
+            <span className="text-lg font-semibold">Chatbot HAU</span>
           </div>
 
           {/* Mobile Steps Indicator */}

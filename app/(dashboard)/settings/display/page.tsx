@@ -58,8 +58,8 @@ export default function DisplayPage() {
 
   return (
     <ContentSection
-      title="Display"
-      desc="Turn items on or off to control what's displayed in the app."
+      title="Hiển thị"
+      desc="Bật hoặc tắt các tính năng để kiểm soát nội dung hiển thị trong ứng dụng."
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -71,7 +71,7 @@ export default function DisplayPage() {
                 <div className="mb-4">
                   <FormLabel className="text-base">Sidebar</FormLabel>
                   <FormDescription>
-                    Select the items you want to display in the sidebar.
+                    Chọn các tính năng bạn muốn hiển thị trong thanh sidebar.
                   </FormDescription>
                 </div>
                 {items.map((item) => (
@@ -111,7 +111,7 @@ export default function DisplayPage() {
               </FormItem>
             )}
           />
-          <Button type="submit">Update display</Button>
+          <Button type="submit">Cập nhật</Button>
         </form>
       </Form>
     </ContentSection>

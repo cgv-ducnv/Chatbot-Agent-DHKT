@@ -106,7 +106,7 @@ export default function SettingsProfilePage() {
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input placeholder="shadcn" {...field} />
+                  <Input placeholder="shadcn" {...field} disabled={true} />
                 </FormControl>
                 <FormDescription>
                   Tên đăng nhập của bạn trên hệ thống.
@@ -122,7 +122,11 @@ export default function SettingsProfilePage() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="you@example.com" {...field} />
+                  <Input
+                    placeholder="you@example.com"
+                    {...field}
+                    disabled={true}
+                  />
                 </FormControl>
                 <FormDescription>
                   Email hiện tại được lấy từ tài khoản của bạn.
@@ -139,7 +143,11 @@ export default function SettingsProfilePage() {
               <FormItem>
                 <FormLabel>Họ và tên</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nguyễn Văn A" {...field} />
+                  <Input
+                    placeholder="Nguyễn Văn A"
+                    {...field}
+                    disabled={true}
+                  />
                 </FormControl>
                 <FormDescription>
                   Họ tên đầy đủ hiển thị trên hệ thống.
@@ -158,9 +166,15 @@ export default function SettingsProfilePage() {
                 <div className="mt-1">
                   <Badge
                     variant={userProfile?.is_active ? "outline" : "destructive"}
-                    className={userProfile?.is_active ? "border-green-500 text-green-600" : ""}
+                    className={
+                      userProfile?.is_active
+                        ? "border-green-500 text-green-600"
+                        : ""
+                    }
                   >
-                    {userProfile?.is_active ? "Đang hoạt động" : "Ngừng hoạt động"}
+                    {userProfile?.is_active
+                      ? "Đang hoạt động"
+                      : "Ngừng hoạt động"}
                   </Badge>
                 </div>
                 <FormDescription>
@@ -178,7 +192,10 @@ export default function SettingsProfilePage() {
                 <FormLabel>Vai trò & quyền hạn</FormLabel>
                 <div className="mt-1 space-y-2">
                   <div>
-                    <Badge variant="outline" className="border-blue-500 text-blue-600">
+                    <Badge
+                      variant="outline"
+                      className="border-blue-500 text-blue-600"
+                    >
                       <LucideIcons.ShieldCheck className="mr-1 size-3.5" />
                       {userProfile?.role || "N/A"}
                     </Badge>
@@ -188,7 +205,9 @@ export default function SettingsProfilePage() {
                     <div className="mt-1 flex flex-wrap gap-2 text-xs">
                       {userPermissionMetas.map((meta) => {
                         const Icon =
-                          (LucideIcons[meta.icon as keyof typeof LucideIcons] as ElementType) ??
+                          (LucideIcons[
+                            meta.icon as keyof typeof LucideIcons
+                          ] as ElementType) ??
                           (LucideIcons.KeyRound as ElementType);
 
                         return (
@@ -215,7 +234,7 @@ export default function SettingsProfilePage() {
               </FormItem>
             )}
           />
-          <Button type="submit">Update profile</Button>
+          {/* <Button type="submit">Update profile</Button> */}
         </form>
       </Form>
     </ContentSection>

@@ -39,8 +39,9 @@ export default function Page() {
       <div className="grid gap-6 @5xl:grid-cols-2 min-w-0 lg:px-6">
         <PaymentVolumeChart />
       </div>
-
-      <PaymentAnalytics />
+      <div className="grid gap-6 @5xl:grid-cols-2 min-w-0 lg:px-6">
+        <PaymentAnalytics />
+      </div>
       <div className="@container/main">
         <DataTable
           data={data}

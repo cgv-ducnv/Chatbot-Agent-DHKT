@@ -335,7 +335,7 @@ export default function AIConfigDetailPage() {
         );
       case "faqs":
         return (
-          <div className="h-full">
+          <div className="h-full min-w-0">
             <FAQsDataTableList
               faqs={faqs}
               isLoading={isLoadingFaqs}
@@ -404,7 +404,7 @@ export default function AIConfigDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-4 lg:px-6">
+    <div className="flex flex-col gap-6 px-4 py-4 lg:px-6 min-w-0">
       {/* Breadcrumb */}
       <AppBreadcrumb
         items={[
@@ -452,9 +452,9 @@ export default function AIConfigDetailPage() {
             animate={{ opacity: 1, height: "auto", y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden w-full"
+            className="min-w-0 w-full overflow-hidden"
           >
-            <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
+            <div className="min-w-0 border rounded-xl bg-card shadow-sm overflow-hidden">
               <NavigationRailFilter
                 position="left"
                 searchPlaceholder={currentSearchPlaceholder}
@@ -470,7 +470,9 @@ export default function AIConfigDetailPage() {
                 onColumnVisibilityChange={handleColumnVisibilityChange}
                 classNamePosition="px-2"
               >
-                <div className="p-6">{renderFeatureContent()}</div>
+                <div className="min-w-0 overflow-hidden p-6 w-full">
+                  {renderFeatureContent()}
+                </div>
               </NavigationRailFilter>
             </div>
           </motion.div>

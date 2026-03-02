@@ -413,14 +413,14 @@ export function FAQsDataTableList({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 max-w-full overflow-hidden">
       <FAQsDataTableToolbar
         table={table}
         search={search}
         onSearchChange={(value) => setSearch(value ?? undefined)}
         onAdd={onAddFaq}
       />
-      <div className="rounded-md border">
+      <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

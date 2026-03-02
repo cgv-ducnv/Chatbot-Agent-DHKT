@@ -15,13 +15,16 @@ import { NavGroup } from "./nav-group";
 import { NavUser } from "./nav-user";
 import { TeamSwitcher } from "./team-switcher";
 import { filterNavGroupsByPermissions } from "@/lib/filter-nav-items";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export default function AppSidebar({
   ...props
 }: React.ComponentProps<typeof UISidebar>) {
   const { user, permissions } = useAuth();
   const { config } = useSidebarConfig();
-
+  // Trong component:
+  const { state } = useSidebar(); // "expanded" | "collapsed"
+  const isCollapsed = state === "collapsed";
   // Filter nav groups dựa trên user permissions
   const filteredNavGroups = useMemo(() => {
     return filterNavGroupsByPermissions(sidebarData.navGroups, permissions);
@@ -43,15 +46,23 @@ export default function AppSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <div className="w-full px-3 pb-3">
-          <div
-            className="rounded-xl border border-emerald-500/20 
-              bg-emerald-500/5 px-3 py-2 
-              text-[11px] text-muted-foreground text-center"
-          >
-            <div>Phát triển bởi CGV Telecom</div>
-            <div className="opacity-70">© {new Date().getFullYear()}</div>
-          </div>
+        <div className="w-full py-2">
+          {isCollapsed ? (
+            // Dạng thu gọn: chỉ hiện icon/năm
+            <div className="flex items-center justify-center rounded-full">
+              <span className="text-[12px] opacity-70 text-center text-white">
+                CGV
+              </span>
+            </div>
+          ) : (
+            // Dạng đầy đủ
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[11px] text-muted-foreground text-center">
+              <div className="text-white">Phát triển bởi CGV Telecom</div>
+              <div className="opacity-70 text-white">
+                © {new Date().getFullYear()}
+              </div>
+            </div>
+          )}
         </div>
       </SidebarFooter>
       <SidebarRail />

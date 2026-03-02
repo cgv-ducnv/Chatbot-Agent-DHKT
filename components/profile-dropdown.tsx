@@ -87,7 +87,7 @@ export function ProfileDropdown() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="#">
+            <Link href="/settings">
               Thông tin người dùng
               <DropdownMenuShortcut>
                 <User className="size-4" />

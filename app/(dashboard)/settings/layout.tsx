@@ -135,21 +135,22 @@ export default function SettingsLayout({
   return (
     <div className="-m-4 flex h-[calc(100vh-4rem)] flex-col">
       <div className="shrink-0 px-4 pt-6 lg:px-6">
-        <AppBreadcrumb
-          items={[
-            {
-              label: "Dashboard",
-              href: "/dashboard",
-              icon: <Home className="size-4" />,
-            },
-            {
-              label: "Cài đặt",
-              href: "/settings",
-              icon: <UserCog className="size-4" />,
-            },
-          ]}
-        />
-        <Separator className="my-4 lg:my-6" />
+        <div className="py-4 px-2">
+          <AppBreadcrumb
+            items={[
+              {
+                label: "Dashboard",
+                href: "/dashboard",
+                icon: <Home className="size-4" />,
+              },
+              {
+                label: "Cài đặt",
+                href: "/settings",
+                icon: <UserCog className="size-4" />,
+              },
+            ]}
+          />
+        </div>
         <div className="md:hidden">
           <SidebarNavMobile items={sidebarNavItems} />
         </div>

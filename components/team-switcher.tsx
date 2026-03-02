@@ -42,7 +42,7 @@ export function TeamSwitcher({
               className="group/team relative overflow-hidden data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               {/* Gradient Logo Container */}
-              <div className="relative flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-violet-500/20 transition-transform group-hover/team:scale-105">
+              <div className="relative flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-violet-500/20 transition-transform group-hover/team:scale-105 dark:bg-transparent">
                 {typeof activeTeam.logo === "function" ? (
                   <activeTeam.logo className="size-4" />
                 ) : (

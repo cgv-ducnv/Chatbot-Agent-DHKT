@@ -304,7 +304,7 @@ export default function SignIn() {
                       {isTypingDots ? (
                         <div className="flex items-center gap-1.5 px-1 py-1">
                           <p className="text-sm font-medium text-gray-800 dark:text-white leading-relaxed">
-                            Thinking
+                            Suy nghĩ
                           </p>
                           <span
                             className="h-1.5 w-1.5 rounded-full bg-white dark:bg-slate-300 animate-pulse"
@@ -534,6 +534,9 @@ export default function SignIn() {
                         >
                           {isTypingDots ? (
                             <div className="flex items-center gap-2 py-1">
+                              <p className="text-sm font-medium text-gray-800 dark:text-white leading-relaxed">
+                                Suy nghĩ
+                              </p>
                               <span
                                 className="h-2.5 w-2.5 rounded-full bg-[#3b82f6]/60 dark:bg-[#60a5fa]/60 animate-pulse"
                                 style={{ animationDelay: "0ms" }}
