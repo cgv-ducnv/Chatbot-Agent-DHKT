@@ -165,31 +165,6 @@ export function ChatHeader({
             </TooltipContent>
           </Tooltip>
 
-          {/* Video call */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer"
-                onClick={() => {
-                  if (phoneNumber) {
-                    if (typeof window !== "undefined") {
-                      window.location.href = `tel:${phoneNumber}`;
-                    }
-                  } else {
-                    router.push("/settings");
-                  }
-                }}
-              >
-                <Video className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Cuộc gọi video</p>
-            </TooltipContent>
-          </Tooltip>
-
           {/* Info */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -210,13 +185,13 @@ export function ChatHeader({
 
         {/* More options */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          {/* <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="cursor-pointer">
               <MoreVertical className="size-4" />
             </Button>
-          </DropdownMenuTrigger>
+          </DropdownMenuTrigger> */}
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onToggleMute} className="cursor-pointer">
+            {/* <DropdownMenuItem onClick={onToggleMute} className="cursor-pointer">
               {conversation.isMuted ? (
                 <>
                   <Bell className="size-4 mr-2" />
@@ -228,12 +203,12 @@ export function ChatHeader({
                   Tắt tiếng trò chuyện
                 </>
               )}
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
             {/* <DropdownMenuItem className="cursor-pointer">
               <Search className="size-4 mr-2" />
               Tìm kiếm tin nhắn
             </DropdownMenuItem> */}
-            {conversation.type === "group" && (
+            {/* {conversation.type === "group" && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer">
@@ -241,11 +216,11 @@ export function ChatHeader({
                   Quản lý thành viên
                 </DropdownMenuItem>
               </>
-            )}
+            )} */}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive">
+            {/* <DropdownMenuItem className="cursor-pointer text-destructive">
               Xóa trò chuyện
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -262,9 +237,7 @@ export function ChatHeader({
           <div className="space-y-3 py-2 text-sm">
             {emailAddress && (
               <div className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground break-all">
-                <span className="font-medium text-foreground mr-1">
-                  Email:
-                </span>
+                <span className="font-medium text-foreground mr-1">Email:</span>
                 {emailAddress}
               </div>
             )}

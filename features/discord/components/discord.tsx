@@ -75,10 +75,10 @@ const MockDiscordUI = ({ children }: PropsWithChildren) => {
                 src="https://github.com/shadcn.png"
                 width={32}
                 height={32}
-                alt="Omichannel avatar"
+                alt="Chatbot Hauavatar"
                 className="object-cover rounded-full mr-3"
               />
-              <span className="font-medium">Omichannel</span>
+              <span className="font-medium">Chatbot Hau</span>
             </div>
 
             <div className="my-1 space-y-px">
@@ -100,11 +100,11 @@ const MockDiscordUI = ({ children }: PropsWithChildren) => {
             src="https://github.com/shadcn.png"
             width={32}
             height={32}
-            alt="Omichannel avatar"
+            alt="Chatbot Hau avatar"
             className="rounded-full mr-2"
           />
           <div className="flex-1">
-            <p className="text-sm font-medium text-white">Omichannel</p>
+            <p className="text-sm font-medium text-white">Chatbot Hau</p>
             <p className="text-xs text-[#b9bbbe] flex items-center">
               @shadcn_admin
             </p>
@@ -130,14 +130,14 @@ const MockDiscordUI = ({ children }: PropsWithChildren) => {
             <div className="relative">
               <Image
                 src="https://github.com/shadcn.png"
-                alt="Omichannel avatar"
+                alt="Chatbot Hau avatar"
                 width={40}
                 height={40}
                 className="object-cover rounded-full mr-3"
               />
               <div className="absolute bottom-0 right-3 size-3 bg-green-500 rounded-full border-2 border-[#36393f]" />
             </div>
-            <p className="font-semibold text-white">Omichannel</p>
+            <p className="font-semibold text-white">Chatbot Hau</p>
           </div>
 
           <div className="ml-auto flex items-center space-x-2 lg:space-x-4 text-[#b9bbbe]">
@@ -162,7 +162,7 @@ const MockDiscordUI = ({ children }: PropsWithChildren) => {
             <PlusCircle className="mx-3 text-[#b9bbbe] hover:text-white cursor-not-allowed" />
             <input
               type="text"
-              placeholder="Message @Omichannel"
+              placeholder="Message @Chatbot Hau"
               readOnly
               className="flex-1 bg-transparent py-2 px-1 text-white placeholder-[#72767d] focus:outline-none cursor-not-allowed"
             />
