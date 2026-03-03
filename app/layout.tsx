@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   title: "Hệ thống Chatbot HAU",
   description: "Bảng quản trị hệ thống Chatbot HAU của HAU",
   icons: {
-    icon: "/logocon/logo_icon_1.png",
+    icon: "/logocon/Logo_HAU.png",
   },
 };
 

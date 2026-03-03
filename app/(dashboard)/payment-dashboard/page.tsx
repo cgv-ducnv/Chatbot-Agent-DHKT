@@ -1,7 +1,7 @@
 import { PaymentAnalytics } from "@/features/payment-dashboard/components/payment-analytics";
 import { PaymentGatewayStatus } from "@/features/payment-dashboard/components/payment-gateway-status";
 import { PaymentMethodsBreakdown } from "@/features/payment-dashboard/components/payment-methods-breakdown";
-import { PaymentMetrics } from "@/features/payment-dashboard/components/payment-metrics";
+// import { PaymentMetrics } from "@/features/payment-dashboard/components/payment-metrics";
 import { PaymentVolumeChart } from "@/features/payment-dashboard/components/payment-volume-chart";
 import { QuickActions } from "@/features/payment-dashboard/components/quick-actions";
 import { RecentPayments } from "@/features/payment-dashboard/components/recent-payments";
@@ -17,7 +17,7 @@ export default function PaymentDashboardPage() {
       </div>
 
       <div className="@container/main px-4 lg:px-6 space-y-6">
-        <PaymentMetrics />
+        {/* <PaymentMetrics /> */}
         <QuickActions />
         <div className="grid gap-6 @5xl:grid-cols-2 min-w-0">
           <PaymentVolumeChart />

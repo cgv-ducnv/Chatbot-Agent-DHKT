@@ -18,7 +18,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Permission, PERMISSIONS } from "@/constants/permission";
+import { Permission } from "@/constants/permission";
 import { useNavigationEvents } from "@/hooks/use-navigation-events";
 import { useMe } from "@/hooks/user/use-me";
 import { toast } from "sonner";
