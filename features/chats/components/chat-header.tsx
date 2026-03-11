@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import type { ChatConversation, ChatUser } from "../utils/types";
+import { toast } from "sonner";
 
 interface ChatHeaderProps {
   conversation: ChatConversation | null;
@@ -66,7 +67,10 @@ export function ChatHeader({
       </div>
     );
   }
-
+  console.log(conversation);
+  console.log(users);
+  console.log(phoneNumber);
+  console.log(emailAddress);
   return (
     <div className="flex items-center justify-between h-full">
       {/* Left side - Avatar and info */}
@@ -130,7 +134,10 @@ export function ChatHeader({
                       window.location.href = `tel:${phoneNumber}`;
                     }
                   } else {
-                    router.push("/settings");
+                    toast.error(
+                      "Không tìm thấy số điện thoại khách hàng. Kiểm tra lại thông tin khách hàng hoặc kiểm tra lại quyền truy cập dữ liệu khách hàng của bạn",
+                    );
+                    return;
                   }
                 }}
               >
@@ -151,7 +158,9 @@ export function ChatHeader({
                 className="cursor-pointer"
                 onClick={() => {
                   if (!emailAddress) {
-                    router.push("/settings");
+                    toast.error(
+                      "Không tìm thấy email khách hàng. Kiểm tra lại thông tin khách hàng hoặc kiểm tra lại quyền truy cập dữ liệu khách hàng của bạn",
+                    );
                     return;
                   }
                   setIsEmailHelpOpen(true);
