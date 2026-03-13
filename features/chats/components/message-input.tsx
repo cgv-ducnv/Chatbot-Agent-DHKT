@@ -129,23 +129,6 @@ export function MessageInput({
       <div className="flex items-end gap-2">
         <TooltipProvider>
           <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={disabled}
-                    className="cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    <Paperclip className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Attach file</p>
-              </TooltipContent>
-            </Tooltip>
             <DropdownMenuContent side="top" align="start">
               <DropdownMenuItem
                 onClick={() => handleFileUpload("image")}
@@ -179,73 +162,7 @@ export function MessageInput({
             )}
             rows={1}
           />
-
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={disabled}
-                    className="size-6 p-0 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    <Smile className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add emoji</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={disabled}
-                    className="size-6 p-0 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>More options</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
         </div>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              {message.trim() ? (
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={disabled}
-                  className="cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Send className="size-4" />
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={disabled}
-                  className="cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Mic className="size-4" />
-                </Button>
-              )}
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{message.trim() ? "Gửi tin nhắn" : "Gửi giọng nói"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
     </div>
   );

@@ -176,7 +176,7 @@ export function AIConfigFormDialog({
                 name="model_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model</FormLabel>
+                    <FormLabel>Mô hình A.I</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}

@@ -187,7 +187,8 @@ export function ChatHeader({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Thông tin trò chuyện</p>
+              <p>Bạn đang chat với</p>
+              <p>{conversation.name}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

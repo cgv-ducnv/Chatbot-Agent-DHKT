@@ -211,7 +211,7 @@ export function AIConfigsDataTableList({
             className="-ml-2 h-8 data-[state=open]:bg-accent hover:bg-transparent p-0"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Model
+            Mô hình A.I
             {column.getIsSorted() === "asc" ? (
               <ArrowUp className="ml-2 h-4 w-4" />
             ) : column.getIsSorted() === "desc" ? (

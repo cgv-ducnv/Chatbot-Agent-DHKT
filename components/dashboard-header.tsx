@@ -72,7 +72,7 @@ export function DashboardHeader() {
       />
       <div className="ml-auto flex items-center gap-1">
         {/* <TelesipSDK /> */}
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={() => window.showWidget?.()}
@@ -80,7 +80,7 @@ export function DashboardHeader() {
         >
           <Phone className="h-5 w-5" />
           <span className="sr-only">Mở trình gọi điện</span>
-        </Button>
+        </Button> */}
         <Button
           variant="ghost"
           size="icon"
