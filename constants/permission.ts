@@ -132,6 +132,13 @@ export const PERMISSIONS = {
   CREATE_SOURCE: "create_source",
   EDIT_SOURCE: "edit_source",
   DELETE_SOURCE: "delete_source",
+
+  // Documents
+  VIEW_DOCUMENTS: "view_documents",
+  VIEW_DOCUMENT_BY_ID: "view_document_by_id",
+  CREATE_DOCUMENT: "create_document",
+  EDIT_DOCUMENT: "edit_document",
+  DELETE_DOCUMENT: "delete_document",
 } as const;
 
 /**

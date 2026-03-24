@@ -1,26 +1,20 @@
 import type { SidebarData } from "@/lib/types";
 import {
-  IconArrowsExchange,
   IconBrowserCheck,
-  IconCalendar,
-  IconChartBar,
-  IconChecklist,
   IconCreditCard,
-  IconHelp,
   IconLayoutDashboard,
   IconLock,
   IconMessages,
-  IconNotification,
   IconPalette,
   IconReportMoney,
   IconSettings,
-  IconTool,
   IconUserCog,
   IconUsers,
   IconShieldCheck,
   IconBuilding,
   IconFingerprint,
   IconRobot,
+  IconFileStack,
 } from "@tabler/icons-react";
 import { Workflow } from "lucide-react";
 import { PERMISSIONS } from "@/constants/permission";
@@ -100,6 +94,12 @@ export const sidebarData: SidebarData = {
           url: "/ai-configs",
           icon: IconRobot,
           permissions: [PERMISSIONS.VIEW_AI_CONFIGS],
+        },
+        {
+          title: "Quản lý tài liệu",
+          url: "/documents",
+          icon: IconFileStack,
+          permissions: [PERMISSIONS.VIEW_DOCUMENTS],
         },
         {
           title: "Quản lý ticket",

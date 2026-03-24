@@ -3,7 +3,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
   IconMessageChatbot,
-  IconSettings,
   IconHelp,
   IconCode,
   IconMessage,
@@ -31,9 +30,9 @@ export const AI_CONFIG_FEATURES = [
     bgColor: "bg-teal-100 dark:bg-teal-900/20",
   },
   {
-    id: "support",
-    title: "Yêu cầu hỗ trợ",
-    description: "Gửi ticket hỗ trợ kỹ thuật",
+    id: "documents",
+    title: "Xử lý tài liệu",
+    description: "Xử lý tài liệu với Light RAG",
     icon: IconHelp,
     color: "text-green-600 dark:text-green-400",
     bgColor: "bg-green-100 dark:bg-green-900/20",

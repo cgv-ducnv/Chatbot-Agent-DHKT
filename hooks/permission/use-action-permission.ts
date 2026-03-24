@@ -25,6 +25,11 @@ export const useAssignRolePermission = () => {
       queryClient.invalidateQueries({
         queryKey: ["role-permissions"],
       });
+      // Refetch thông tin user hiện tại để AuthContext cập nhật permissions,
+      // từ đó sidebar tự hiển thị các menu vừa được cấp quyền.
+      queryClient.invalidateQueries({
+        queryKey: ["me"],
+      });
     },
     onError: (error: Error) => {
       console.error("Lỗi khi phân quyền:", error);

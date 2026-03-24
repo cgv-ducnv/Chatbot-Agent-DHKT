@@ -53,7 +53,7 @@ import { useState } from "react";
 
 const models = [
   {
-    name: "Gemini 2.5 Flash",
+    name: "gemini-2.5-flash",
     value: "gemini-2.5-flash",
   },
 ];

@@ -65,7 +65,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b border-border/50 bg-background/80 px-4 backdrop-blur-xl">
       <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
       <Separator orientation="vertical" className="mx-2 h-6" />
-      <SearchTrigger onClick={() => setCommandSearchOpen(true)} />
+      {/* <SearchTrigger onClick={() => setCommandSearchOpen(true)} /> */}
       <CommandSearch
         open={commandSearchOpen}
         onOpenChange={setCommandSearchOpen}

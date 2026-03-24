@@ -455,25 +455,26 @@ export default function AIConfigDetailPage() {
             className="min-w-0 w-full overflow-hidden"
           >
             <div className="min-w-0 border rounded-xl bg-card shadow-sm overflow-hidden">
-              <NavigationRailFilter
-                position="left"
-                searchPlaceholder={currentSearchPlaceholder}
-                onSearchChange={handleSearchChange}
-                searchDebounceMs={500}
-                selectLabel="Sắp xếp"
-                selectOptions={currentSortOptions}
-                selectValue={currentSortValue}
-                onSelectChange={handleSortChange}
-                onClearAll={handleClearFilters}
-                columnOptions={currentColumnOptions}
-                columnVisibility={currentColumnVisibility}
-                onColumnVisibilityChange={handleColumnVisibilityChange}
-                classNamePosition="px-2"
-              >
-                <div className="min-w-0 overflow-hidden p-6 w-full">
+              <div className="flex min-h-[min(70vh,720px)] w-full">
+                <NavigationRailFilter
+                  className="shrink-0 border-r border-border min-h-[min(70vh,720px)]"
+                  verticalDockPositionClassName="px-2"
+                  searchPlaceholder={currentSearchPlaceholder}
+                  onSearchChange={handleSearchChange}
+                  searchDebounceMs={500}
+                  selectLabel="Sắp xếp"
+                  selectOptions={currentSortOptions}
+                  selectValue={currentSortValue}
+                  onSelectChange={handleSortChange}
+                  onClearAll={handleClearFilters}
+                  columnOptions={currentColumnOptions}
+                  columnVisibility={currentColumnVisibility}
+                  onColumnVisibilityChange={handleColumnVisibilityChange}
+                />
+                <div className="min-w-0 flex-1 overflow-hidden p-6">
                   {renderFeatureContent()}
                 </div>
-              </NavigationRailFilter>
+              </div>
             </div>
           </motion.div>
         )}

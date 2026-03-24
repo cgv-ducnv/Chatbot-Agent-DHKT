@@ -27,7 +27,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AppBreadcrumb } from "@/components/breadcrumb";
-import { IconBuilding, IconLock } from "@tabler/icons-react";
 
 interface Permission {
   id: string;

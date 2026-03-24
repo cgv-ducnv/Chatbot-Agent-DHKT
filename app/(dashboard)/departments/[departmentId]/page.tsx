@@ -249,11 +249,6 @@ function DepartmentDetailPageContent({
   );
 }
 
-/**
- * DepartmentDetailPage Wrapper
- * Đóng vai trò Guard: Check quyền -> Nếu OK mới render Content
- * Ngăn chặn việc execute hooks/api calls khi chưa có quyền
- */
 export default function DepartmentDetailPage({
   params,
 }: {
@@ -262,7 +257,7 @@ export default function DepartmentDetailPage({
   const { departmentId } = use(params);
 
   return (
-    <ProtectedRoute requiredPermissions={[PERMISSIONS.VIEW_DEPARTMENT_BY_ID]}>
+    <ProtectedRoute requiredPermissions={[PERMISSIONS.VIEW_DEPARTMENTS]}>
       <DepartmentDetailPageContent departmentId={departmentId} />
     </ProtectedRoute>
   );

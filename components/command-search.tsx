@@ -26,6 +26,7 @@ import {
   IconUserOff,
   IconUsers,
   IconBuilding,
+  IconFileStack,
 } from "@tabler/icons-react";
 import { Building, KanbanIcon, MailIcon, Search } from "lucide-react";
 import Link from "next/link";
@@ -83,6 +84,12 @@ const searchItems: SearchItem[] = [
   { title: "Discord", url: "/discord", group: "Apps", icon: Icons.discord },
   { title: "Tasks", url: "/tasks", group: "Apps", icon: IconChecklist },
   { title: "Users", url: "/users", group: "Apps", icon: IconUsers },
+  {
+    title: "Tài liệu RAG",
+    url: "/documents",
+    group: "Apps",
+    icon: IconFileStack,
+  },
   { title: "Departments", url: "/departments", group: "Apps", icon: Building },
   { title: "Chats", url: "/chats", group: "Apps", icon: IconMessages },
   { title: "Calendar", url: "/calendar", group: "Apps", icon: IconCalendar },

@@ -135,8 +135,8 @@ const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
                     ? "text-sidebar-accent-foreground"
                     : "text-violet-600 dark:text-violet-400"
                   : isModernMinimal
-                    ? "text-sidebar-foreground/70 group-hover/link:text-sidebar-foreground"
-                    : "text-muted-foreground group-hover/link:text-foreground",
+                    ? "group-hover/link:text-sidebar-foreground text-white"
+                    : "text-muted-foreground group-hover/link:text-foreground text-white",
               )}
             />
           )}
@@ -186,8 +186,8 @@ const SidebarMenuCollapsible = ({
                       ? "text-sidebar-accent-foreground"
                       : "text-violet-600 dark:text-violet-400"
                     : isModernMinimal
-                      ? "text-sidebar-foreground/70 group-hover/link:text-sidebar-foreground"
-                      : "text-muted-foreground group-hover/link:text-foreground",
+                      ? "group-hover/link:text-sidebar-foreground text-white"
+                      : "group-hover/link:text-foreground text-white",
                 )}
               />
             )}
@@ -195,7 +195,7 @@ const SidebarMenuCollapsible = ({
             {item.badge && (
               <NavBadge color={item.badgeColor}>{item.badge}</NavBadge>
             )}
-            <ChevronRight className="ml-auto size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            <ChevronRight className="ml-auto size-4 text-white transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent className="CollapsibleContent">

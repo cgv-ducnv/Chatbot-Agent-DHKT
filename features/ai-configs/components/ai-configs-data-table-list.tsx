@@ -223,7 +223,7 @@ export function AIConfigsDataTableList({
         );
       },
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.model_name}</span>
+        <span className="font-medium">{row.original.model_name || "-"}</span>
       ),
     },
     {

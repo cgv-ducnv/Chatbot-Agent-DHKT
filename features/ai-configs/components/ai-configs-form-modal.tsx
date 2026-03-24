@@ -248,7 +248,7 @@ export function AIConfigFormDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Nhập prompt hệ thống"
-                      className="min-h-[150px]"
+                      className="min-h-[150px] max-h-[300px] overflow-y-auto"
                       {...field}
                     />
                   </FormControl>

@@ -12,6 +12,9 @@ import {
   Layers,
   Tags,
   Settings2,
+  LayoutGrid,
+  List,
+  ListOrdered,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +33,7 @@ import {
   useContext,
   useRef,
   useEffect,
+  isValidElement,
   type ReactNode,
   type ReactElement,
 } from "react";
@@ -64,8 +68,8 @@ import {
 // ============================================
 
 const DEFAULT_MAGNIFICATION = 60;
-const DEFAULT_DISTANCE = 140;
-const DEFAULT_PANEL_SIZE = 56;
+const DEFAULT_DISTANCE = 100;
+const DEFAULT_PANEL_WIDTH = 56;
 
 interface DockContextType {
   mousePos: MotionValue<number>;
@@ -89,7 +93,7 @@ interface DockProps {
   children: ReactNode;
   className?: string;
   distance?: number;
-  panelSize?: number;
+  panelWidth?: number;
   magnification?: number;
   spring?: SpringOptions;
   orientation?: "vertical" | "horizontal";
@@ -101,7 +105,7 @@ function Dock({
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
   magnification = DEFAULT_MAGNIFICATION,
   distance = DEFAULT_DISTANCE,
-  panelSize = DEFAULT_PANEL_SIZE,
+  panelWidth = DEFAULT_PANEL_WIDTH,
   orientation = "vertical",
 }: DockProps) {
   const mousePos = useMotionValue(Number.POSITIVE_INFINITY);
@@ -109,16 +113,16 @@ function Dock({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-2xl bg-card/95 backdrop-blur-md border border-border/50 shadow-xl z-20",
+        "flex items-center gap-2 rounded-2xl bg-card/95 backdrop-blur-md border border-border/50 shadow-xl pointer-events-auto",
         orientation === "vertical"
-          ? "flex-col h-fit py-3 w-[var(--panel-size)]"
-          : "flex-row w-fit px-3 h-[var(--panel-size)]",
+          ? "flex-col h-fit py-3 mb-3"
+          : "flex-row w-fit px-3",
         className,
       )}
       style={
-        {
-          "--panel-size": `${panelSize}px`,
-        } as React.CSSProperties
+        orientation === "vertical"
+          ? { width: panelWidth }
+          : { height: panelWidth }
       }
       onMouseLeave={() => {
         mousePos.set(Number.POSITIVE_INFINITY);
@@ -159,14 +163,15 @@ function DockItem({
 
   const mouseDistance = useTransform(mousePos, (val) => {
     const domRect = ref.current?.getBoundingClientRect() ?? {
-      x: 0,
       y: 0,
-      width: 0,
+      x: 0,
       height: 0,
+      width: 0,
     };
-    return orientation === "vertical"
-      ? val - domRect.y - domRect.height / 2
-      : val - domRect.x - domRect.width / 2;
+    if (orientation === "vertical") {
+      return val - domRect.y - domRect.height / 2;
+    }
+    return val - domRect.x - domRect.width / 2;
   });
 
   const sizeTransform = useTransform(
@@ -223,10 +228,10 @@ interface DockLabelProps {
 }
 
 function DockLabel({ children, className, ...rest }: DockLabelProps) {
-  const { orientation } = useDock();
   const restProps = rest as Record<string, unknown>;
   const isHovered = restProps.isHovered as MotionValue<number>;
   const [isVisible, setIsVisible] = useState(false);
+  const { orientation } = useDock();
 
   useEffect(() => {
     if (!isHovered) return;
@@ -244,14 +249,15 @@ function DockLabel({ children, className, ...rest }: DockLabelProps) {
           animate={{
             opacity: 1,
             x: orientation === "vertical" ? 10 : 0,
-            y: orientation === "horizontal" ? 10 : 0,
+            y: orientation === "vertical" ? 0 : -10,
           }}
           exit={{ opacity: 0, x: 0, y: 0 }}
           className={cn(
-            "absolute z-50 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-lg",
+            "absolute whitespace-nowrap z-50",
             orientation === "vertical"
               ? "left-full ml-3 top-1/2 -translate-y-1/2"
-              : "top-full mt-3 left-1/2 -translate-x-1/2",
+              : "bottom-full mb-3 left-1/2 -translate-x-1/2",
+            "rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-lg",
             className,
           )}
           role="tooltip"
@@ -338,10 +344,25 @@ export type NavigationRailFilterProps = {
   columnOptions?: ColumnOption[];
   columnVisibility?: Record<string, boolean>;
   onColumnVisibilityChange?: (columnId: string, visible: boolean) => void;
-  orientation?: "vertical" | "horizontal"; // Deprecated, use position
-  position?: "top" | "bottom" | "left" | "right";
-  classNamePosition?: string;
-  children?: ReactNode;
+  verticalDockPositionClassName?: string;
+  orientation?: "vertical" | "horizontal";
+
+  searchIcon?: ReactNode;
+  selectIcon?: ReactNode;
+  select2Icon?: ReactNode;
+  comboboxIcon?: ReactNode;
+  tagsIcon?: ReactNode;
+  columnIcon?: ReactNode;
+  filterIcon?: ReactNode;
+  viewMode?: "list" | "kanban";
+  onViewModeChange?: (mode: "list" | "kanban") => void;
+  // Kanban-only pagination (chỉ hiển thị khi viewMode === "kanban")
+  kanbanPage?: number;
+  kanbanPageSize?: number;
+  kanbanTotalPages?: number;
+  kanbanTotal?: number;
+  onKanbanPageChange?: (page: number) => void;
+  onKanbanPageSizeChange?: (pageSize: number) => void;
 };
 
 // Tag color mapping
@@ -395,27 +416,30 @@ export function NavigationRailFilter({
   columnOptions = [],
   columnVisibility = {},
   onColumnVisibilityChange,
-  orientation: propOrientation,
-  position: propPosition,
-  classNamePosition: propClassNamePosition,
-  children,
+  verticalDockPositionClassName = "-translate-y-[20%]",
+  orientation = "vertical",
+  searchIcon,
+  selectIcon,
+  select2Icon,
+  comboboxIcon,
+  tagsIcon,
+  columnIcon,
+  filterIcon,
+  viewMode,
+  onViewModeChange,
+  kanbanPage = 1,
+  kanbanPageSize = 10,
+  kanbanTotalPages = 1,
+  kanbanTotal = 0,
+  onKanbanPageChange,
+  onKanbanPageSizeChange,
 }: NavigationRailFilterProps) {
-  // Resolve effective position
-  let position = propPosition ?? "left";
-  // Backwards compatibility mapping
-  if (!propPosition && propOrientation === "horizontal") position = "top";
-  if (!propPosition && propOrientation === "vertical") position = "left";
-
-  const dockOrientation =
-    position === "top" || position === "bottom" ? "horizontal" : "vertical";
-
-  const isWrapper = !!children;
-
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [searchValue, setSearchValue] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [focusSection, setFocusSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   // Refs for each section
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -425,6 +449,7 @@ export function NavigationRailFilter({
   const tagsTriggerRef = useRef<HTMLButtonElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<HTMLDivElement>(null);
+  const kanbanPaginationRef = useRef<HTMLDivElement>(null);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -487,6 +512,12 @@ export function NavigationRailFilter({
             block: "center",
           });
           break;
+        case "kanban-pagination":
+          kanbanPaginationRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          break;
       }
       setFocusSection(null);
     }, 300);
@@ -498,6 +529,7 @@ export function NavigationRailFilter({
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleClickFocus = useCallback((section: string) => {
     setFocusSection(section);
+    setActiveSection(section);
     setIsExpanded(true);
   }, []);
 
@@ -555,21 +587,76 @@ export function NavigationRailFilter({
     selectedTags.length,
   ].reduce((a, b) => a + b, 0);
 
-  const DockContent = (
-    <div
-      className={cn(
-        "relative flex transition-all bg-background",
-        // Standalone sizing logic if not wrapping content
-        !isWrapper && "h-full",
-        dockOrientation === "vertical" ? "flex-row h-full" : "flex-col w-full",
-        // If wrapping content, we let parent flex container handle sizing
-        isWrapper && (dockOrientation === "vertical" ? "h-full" : "w-full"),
-        // Specific wrapper overrides for panel
-        isWrapper && isExpanded && "h-full w-auto flex-row",
-        !isWrapper && className, // Apply className here if not wrapper
-      )}
-    >
-      {/* Collapsed Dock */}
+  const getHeaderIcon = () => {
+    let icon: ReactNode = null;
+    let defaultIcon: ReactNode = null;
+
+    switch (activeSection) {
+      case "search":
+        icon = searchIcon;
+        defaultIcon = <Search className="size-5 text-primary" />;
+        break;
+      case "select":
+        icon = selectIcon;
+        defaultIcon = <ListFilter className="size-5 text-primary" />;
+        break;
+      case "select2":
+        icon = select2Icon;
+        defaultIcon = <ListFilter className="size-5 text-primary" />;
+        break;
+      case "combobox":
+        icon = comboboxIcon;
+        defaultIcon = <Layers className="size-5 text-primary" />;
+        break;
+      case "tags":
+        icon = tagsIcon;
+        defaultIcon = <Tags className="size-5 text-primary" />;
+        break;
+      case "columns":
+        icon = columnIcon;
+        defaultIcon = <Settings2 className="size-5 text-primary" />;
+        break;
+      default:
+        icon = filterIcon;
+        defaultIcon = <Filter className="size-5 text-primary" />;
+    }
+
+    if (icon && isValidElement(icon)) {
+      return cloneElement(icon as ReactElement<{ className?: string }>, {
+        className: "size-5 text-primary",
+      });
+    }
+
+    return icon || defaultIcon;
+  };
+
+  const renderLabelIcon = (icon: ReactNode, defaultIconKey: string) => {
+    if (icon && isValidElement(icon)) {
+      return cloneElement(icon as ReactElement<{ className?: string }>, {
+        className: "size-4 text-muted-foreground",
+      });
+    }
+
+    switch (defaultIconKey) {
+      case "search":
+        return <Search className="size-4 text-muted-foreground" />;
+      case "select":
+      case "select2":
+        return <ListFilter className="size-4 text-muted-foreground" />;
+      case "combobox":
+        return <Layers className="size-4 text-muted-foreground" />;
+      case "tags":
+        return <Tags className="size-4 text-muted-foreground" />;
+      case "columns":
+        return <Settings2 className="size-4 text-muted-foreground" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={cn("relative flex h-full bg-background", className)}>
+      {/* Collapsed Dock (macOS-like) */}
       <AnimatePresence mode="wait">
         {!isExpanded && (
           <motion.div
@@ -578,35 +665,56 @@ export function NavigationRailFilter({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "flex items-center z-10 pt-[80px]",
-              propClassNamePosition,
-              dockOrientation === "vertical"
-                ? "h-full flex-col justify-start"
-                : "w-full flex-row justify-center",
+              "flex items-center z-10",
+              orientation === "vertical" ? "h-full" : "w-full justify-center",
+              verticalDockPositionClassName,
             )}
           >
             <Dock
               magnification={56}
               distance={100}
-              panelSize={56}
-              orientation={dockOrientation}
+              panelWidth={56}
+              orientation={orientation}
             >
               {/* Main Filter Button */}
               <DockItem
-                onClick={() => setIsExpanded(true)}
+                onClick={() => {
+                  setIsExpanded(true);
+                  setActiveSection(null);
+                }}
                 isActive={hasActiveFilters}
                 badge={hasActiveFilters ? totalActiveFilters : undefined}
               >
                 <DockLabel>Bộ lọc</DockLabel>
                 <DockIcon>
-                  <Filter className="size-full" />
+                  {filterIcon || <Filter className="size-full" />}
                 </DockIcon>
               </DockItem>
+
+              {/* View Mode Toggle */}
+              {viewMode && onViewModeChange && (
+                <DockItem
+                  onClick={() =>
+                    onViewModeChange(viewMode === "list" ? "kanban" : "list")
+                  }
+                >
+                  <DockLabel>
+                    {viewMode === "list" ? "Chế độ Kanban" : "Chế độ Danh sách"}
+                  </DockLabel>
+                  <DockIcon>
+                    {viewMode === "list" ? (
+                      <LayoutGrid className="size-full" />
+                    ) : (
+                      <List className="size-full" />
+                    )}
+                  </DockIcon>
+                </DockItem>
+              )}
 
               <div
                 className={cn(
                   "bg-border/50",
-                  dockOrientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
+                  orientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
                 )}
               />
 
@@ -618,7 +726,7 @@ export function NavigationRailFilter({
               >
                 <DockLabel>Tìm kiếm</DockLabel>
                 <DockIcon>
-                  <Search className="size-full" />
+                  {searchIcon || <Search className="size-full" />}
                 </DockIcon>
               </DockItem>
 
@@ -636,7 +744,7 @@ export function NavigationRailFilter({
                       : selectPlaceholder}
                   </DockLabel>
                   <DockIcon>
-                    <ListFilter className="size-full" />
+                    {selectIcon || <ListFilter className="size-full" />}
                   </DockIcon>
                 </DockItem>
               )}
@@ -655,7 +763,7 @@ export function NavigationRailFilter({
                       : select2Placeholder}
                   </DockLabel>
                   <DockIcon>
-                    <ListFilter className="size-full" />
+                    {select2Icon || <ListFilter className="size-full" />}
                   </DockIcon>
                 </DockItem>
               )}
@@ -669,7 +777,7 @@ export function NavigationRailFilter({
                 >
                   <DockLabel>{comboboxLabel}</DockLabel>
                   <DockIcon>
-                    <Layers className="size-full" />
+                    {comboboxIcon || <Layers className="size-full" />}
                   </DockIcon>
                 </DockItem>
               )}
@@ -683,7 +791,7 @@ export function NavigationRailFilter({
                 >
                   <DockLabel>Tags</DockLabel>
                   <DockIcon>
-                    <Tags className="size-full" />
+                    {tagsIcon || <Tags className="size-full" />}
                   </DockIcon>
                 </DockItem>
               )}
@@ -693,10 +801,24 @@ export function NavigationRailFilter({
                 <DockItem onClick={() => handleClickFocus("columns")}>
                   <DockLabel>Hiển thị cột</DockLabel>
                   <DockIcon>
-                    <Settings2 className="size-full" />
+                    {columnIcon || <Settings2 className="size-full" />}
                   </DockIcon>
                 </DockItem>
               )}
+
+              {/* Kanban pagination (chỉ khi viewMode === "kanban") */}
+              {viewMode === "kanban" &&
+                onKanbanPageChange &&
+                onKanbanPageSizeChange && (
+                  <DockItem
+                    onClick={() => handleClickFocus("kanban-pagination")}
+                  >
+                    <DockLabel>Phân trang</DockLabel>
+                    <DockIcon>
+                      <ListOrdered className="size-full" />
+                    </DockIcon>
+                  </DockItem>
+                )}
 
               {/* Clear All */}
               {hasActiveFilters && (
@@ -704,7 +826,7 @@ export function NavigationRailFilter({
                   <div
                     className={cn(
                       "bg-border/50",
-                      dockOrientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
+                      orientation === "vertical" ? "w-6 h-px" : "h-6 w-px",
                     )}
                   />
                   <DockItem onClick={handleClearAll}>
@@ -720,7 +842,7 @@ export function NavigationRailFilter({
         )}
       </AnimatePresence>
 
-      {/* Expanded Panel - Always Vertical Left Style */}
+      {/* Expanded Panel */}
       <AnimatePresence mode="wait">
         {isExpanded && (
           <motion.div
@@ -733,7 +855,7 @@ export function NavigationRailFilter({
               damping: 30,
               mass: 1,
             }}
-            className="flex flex-col bg-card border-r border-border overflow-hidden h-full"
+            className="flex flex-col bg-background border-r border-border overflow-hidden h-full pointer-events-auto"
           >
             {/* Header */}
             <motion.div
@@ -745,12 +867,13 @@ export function NavigationRailFilter({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <motion.div
+                    key={activeSection || "default"}
                     className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10"
                     initial={{ rotate: -180, opacity: 0 }}
                     animate={{ rotate: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
                   >
-                    <Filter className="size-5 text-primary" />
+                    {getHeaderIcon()}
                   </motion.div>
                   <div>
                     <h2 className="font-semibold text-base">Bộ lọc</h2>
@@ -801,7 +924,7 @@ export function NavigationRailFilter({
                 {/* Search Input */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Search className="size-4 text-muted-foreground" />
+                    {renderLabelIcon(searchIcon, "search")}
                     Tìm kiếm
                   </label>
                   <div className="relative">
@@ -834,7 +957,7 @@ export function NavigationRailFilter({
                     <Separator />
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <ListFilter className="size-4 text-muted-foreground" />
+                        {renderLabelIcon(selectIcon, "select")}
                         {selectLabel}
                       </label>
                       <Select
@@ -868,7 +991,7 @@ export function NavigationRailFilter({
                     <Separator />
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <ListFilter className="size-4 text-muted-foreground" />
+                        {renderLabelIcon(select2Icon, "select2")}
                         {select2Label}
                       </label>
                       <Select
@@ -902,7 +1025,7 @@ export function NavigationRailFilter({
                     <Separator />
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Layers className="size-4 text-muted-foreground" />
+                        {renderLabelIcon(comboboxIcon, "combobox")}
                         {comboboxLabel}
                       </label>
                       <Popover
@@ -999,7 +1122,7 @@ export function NavigationRailFilter({
                     <Separator />
                     <div ref={tagsRef} className="space-y-2">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Tags className="size-4 text-muted-foreground" />
+                        {renderLabelIcon(tagsIcon, "tags")}
                         Tags
                       </label>
                       <Popover open={tagsOpen} onOpenChange={setTagsOpen}>
@@ -1109,7 +1232,7 @@ export function NavigationRailFilter({
                     <Separator />
                     <div ref={columnsRef} className="space-y-3">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Settings2 className="size-4 text-muted-foreground" />
+                        {renderLabelIcon(columnIcon, "columns")}
                         Hiển thị cột
                       </label>
                       <div className="space-y-2">
@@ -1145,6 +1268,71 @@ export function NavigationRailFilter({
                     </div>
                   </>
                 )}
+
+                {/* Kanban pagination (chỉ khi viewMode === "kanban") */}
+                {viewMode === "kanban" &&
+                  onKanbanPageChange &&
+                  onKanbanPageSizeChange && (
+                    <>
+                      <Separator />
+                      <div ref={kanbanPaginationRef} className="space-y-3">
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <span className="text-xs text-muted-foreground">
+                              Trang
+                            </span>
+                            <Select
+                              value={String(kanbanPage ?? 1)}
+                              onValueChange={(v) =>
+                                onKanbanPageChange?.(Number(v))
+                              }
+                            >
+                              <SelectTrigger className="w-full h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from(
+                                  {
+                                    length: Math.max(1, kanbanTotalPages ?? 1),
+                                  },
+                                  (_, i) => i + 1,
+                                ).map((p) => (
+                                  <SelectItem key={p} value={String(p)}>
+                                    Trang {p}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <span className="text-xs text-muted-foreground">
+                              Số ticket / trang
+                            </span>
+                            <Select
+                              value={String(kanbanPageSize ?? 10)}
+                              onValueChange={(v) =>
+                                onKanbanPageSizeChange?.(Number(v))
+                              }
+                            >
+                              <SelectTrigger className="w-full h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[10, 20, 30, 50].map((size) => (
+                                  <SelectItem key={size} value={String(size)}>
+                                    {size}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Tổng {kanbanTotal ?? 0} ticket
+                        </p>
+                      </div>
+                    </>
+                  )}
               </motion.div>
             </ScrollArea>
 
@@ -1186,31 +1374,6 @@ export function NavigationRailFilter({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-
-  if (!isWrapper) return DockContent;
-
-  const isRowLayout = isExpanded || position === "left" || position === "right";
-  const renderOrder =
-    (position === "bottom" && !isExpanded) ||
-    (position === "right" && !isExpanded)
-      ? "reverse"
-      : "normal";
-
-  return (
-    <div
-      className={cn(
-        "flex w-full h-full overflow-hidden transition-all",
-        isRowLayout ? "flex-row" : "flex-col",
-        className,
-      )}
-    >
-      {renderOrder === "normal" ? DockContent : null}
-      <div className="flex-1 overflow-auto min-w-0 min-h-0 relative">
-        {children}
-      </div>
-      {renderOrder === "reverse" ? DockContent : null}
     </div>
   );
 }
