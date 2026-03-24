@@ -32,6 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "../utils/types";
 import { MessageAttachment } from "./message-attachment";
+import { Link } from "lucide-react";
 
 export interface MessageListProps {
   messages: ChatMessage[];
@@ -108,6 +109,81 @@ const getUserName = (message: ChatMessage) => {
       return "User";
   }
 };
+
+const INLINE_TOKEN_REGEX = /(\*\*.+?\*\*|`.+?`)/g;
+
+function renderInlineContent(text: string, keyPrefix: string) {
+  return text.split(INLINE_TOKEN_REGEX).map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={`${keyPrefix}-b-${idx}`} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={`${keyPrefix}-c-${idx}`}
+          className="rounded bg-background/70 px-1 py-0.5 font-mono text-[12px]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return <span key={`${keyPrefix}-t-${idx}`}>{part}</span>;
+  });
+}
+
+function renderBotMessageContent(content: string) {
+  const lines = content.split(/\r?\n/);
+
+  return (
+    <div className="space-y-1">
+      {lines.map((rawLine, lineIndex) => {
+        const line = rawLine.trimEnd();
+        const baseKey = `line-${lineIndex}`;
+
+        if (!line.trim()) {
+          return <div key={baseKey} className="h-2" />;
+        }
+
+        const headingMatch = line.match(/^###\s+(.*)$/);
+        if (headingMatch) {
+          return (
+            <div
+              key={baseKey}
+              className="mt-2 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-sm font-semibold"
+            >
+              <span aria-hidden>
+                <Link className="size-4" />
+              </span>
+              <span>{renderInlineContent(headingMatch[1], baseKey)}</span>
+            </div>
+          );
+        }
+
+        const bulletMatch = line.match(/^[*-]\s+(.*)$/);
+        if (bulletMatch) {
+          return (
+            <div key={baseKey} className="flex items-start gap-2">
+              <span className="mt-[2px] text-primary">•</span>
+              <span className="wrap-break-word whitespace-pre-wrap">
+                {renderInlineContent(bulletMatch[1], baseKey)}
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={baseKey} className="wrap-break-word whitespace-pre-wrap">
+            {renderInlineContent(line, baseKey)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
 
 export function MessageList({
   messages,
@@ -325,308 +401,313 @@ export function MessageList({
         className="h-full overflow-auto [overflow-anchor:none]"
         ref={scrollAreaRef}
       >
-      <div className="space-y-4 py-4 px-4">
-        {messageGroups.map((group) => (
-          <div key={group.date}>
-            <div className="flex items-center justify-center py-4">
-              <div className="text-xs font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full">
-                {formatDateHeader(group.date)}
+        <div className="space-y-4 py-4 px-4">
+          {messageGroups.map((group) => (
+            <div key={group.date}>
+              <div className="flex items-center justify-center py-4">
+                <div className="text-xs font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full">
+                  {formatDateHeader(group.date)}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              {group.messages.map((message, messageIndex) => {
-                // Generate senderKey for this message
-                const senderKey = getSenderKey(message);
+              <div className="space-y-3">
+                {group.messages.map((message, messageIndex) => {
+                  // Generate senderKey for this message
+                  const senderKey = getSenderKey(message);
 
-                const isRightSide =
-                  message.role === "bot" || message.role === "customer";
+                  const isRightSide =
+                    message.role === "bot" || message.role === "customer";
 
-                // Check if should show avatar - compare with previous message in THIS group
-                const prevMessage =
-                  messageIndex > 0 ? group.messages[messageIndex - 1] : null;
-                const prevSenderKey = prevMessage
-                  ? getSenderKey(prevMessage)
-                  : null;
+                  // Check if should show avatar - compare with previous message in THIS group
+                  const prevMessage =
+                    messageIndex > 0 ? group.messages[messageIndex - 1] : null;
+                  const prevSenderKey = prevMessage
+                    ? getSenderKey(prevMessage)
+                    : null;
 
-                const showAvatar =
-                  !prevSenderKey || prevSenderKey !== senderKey;
-                const showName = !prevSenderKey || prevSenderKey !== senderKey;
+                  const showAvatar =
+                    !prevSenderKey || prevSenderKey !== senderKey;
+                  const showName =
+                    !prevSenderKey || prevSenderKey !== senderKey;
 
-                const roleBadge = getRoleBadge(message.role);
-                const userName = getUserName(message);
+                  const roleBadge = getRoleBadge(message.role);
+                  const userName = getUserName(message);
 
-                return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-3 group",
-                      isRightSide && "flex-row-reverse",
-                    )}
-                  >
-                    {/* Always render avatar placeholder to maintain consistent layout */}
-                    <div className="w-9 shrink-0">
-                      {showAvatar && (
-                        <Avatar className="size-9 cursor-pointer border-2 border-background shadow-sm">
-                          {message.role === "bot" ? (
-                            <AvatarFallback
-                              className={cn(
-                                getRoleColor(message.role),
-                                "text-white",
-                              )}
-                            >
-                              <Bot className="size-5" />
-                            </AvatarFallback>
-                          ) : (
-                            <AvatarFallback
-                              className={cn(
-                                "text-white text-xs font-medium bg-muted",
-                              )}
-                            >
-                              <User className="size-5 text-muted-foreground" />
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                      )}
-                    </div>
-
+                  return (
                     <div
+                      key={message.id}
                       className={cn(
-                        "flex-1 max-w-[75%] flex flex-col",
-                        isRightSide ? "items-end" : "items-start",
+                        "flex gap-3 group",
+                        isRightSide && "flex-row-reverse",
                       )}
                     >
-                      {showName && (
-                        <div
-                          className={cn(
-                            "mb-1 px-1",
-                            isRightSide && "text-right",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex items-center gap-1.5",
-                              isRightSide && "flex-row-reverse",
-                            )}
-                          >
-                            <span className="text-xs font-semibold text-foreground/80">
-                              {userName}
-                            </span>
-                            {roleBadge && (
-                              <span
+                      {/* Always render avatar placeholder to maintain consistent layout */}
+                      <div className="w-9 shrink-0">
+                        {showAvatar && (
+                          <Avatar className="size-9 cursor-pointer border-2 border-background shadow-sm">
+                            {message.role === "bot" ? (
+                              <AvatarFallback
                                 className={cn(
-                                  "text-[10px] font-medium px-1.5 py-0.5 rounded-full leading-none",
-                                  roleBadge.color,
+                                  getRoleColor(message.role),
+                                  "text-white",
                                 )}
                               >
-                                {roleBadge.label}
-                              </span>
-                            )}
-                          </div>
-                          {message.role === "user" &&
-                            (message.user?.sdt || message.user?.email) && (
-                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 mt-0.5">
-                                {message.user.email && (
-                                  <span>{message.user.email}</span>
+                                <Bot className="size-5" />
+                              </AvatarFallback>
+                            ) : (
+                              <AvatarFallback
+                                className={cn(
+                                  "text-white text-xs font-medium bg-muted",
                                 )}
-                                {message.user.sdt && message.user.email && (
-                                  <span>·</span>
-                                )}
-                                {message.user.sdt && (
-                                  <span>{message.user.sdt}</span>
-                                )}
-                              </div>
-                            )}
-                        </div>
-                      )}
-
-                      <div className="relative group/message flex items-center gap-1">
-                        <div
-                          className={cn(
-                            "rounded-2xl px-3.5 py-2 text-sm leading-relaxed w-fit max-w-full",
-                            message.role === "bot" ||
-                              message.role === "customer"
-                              ? "bg-primary/10 dark:bg-primary/15 border border-primary/20 text-foreground rounded-br-sm"
-                              : message.role === "user"
-                                ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-foreground rounded-bl-sm"
-                                : message.role === "staff"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-foreground rounded-bl-sm"
-                                  : "bg-muted text-foreground rounded-bl-sm",
-                          )}
-                        >
-                          <p className="wrap-break-word whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-
-                          {message.attachments &&
-                            message.attachments.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {message.attachments.map((attachment) => (
-                                  <MessageAttachment
-                                    key={attachment.id}
-                                    attachment={attachment}
-                                    isOwnMessage={isRightSide}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                        </div>
-
-                        <div
-                          className={cn(
-                            "opacity-0 group-hover/message:opacity-100 transition-opacity shrink-0",
-                            isRightSide && "order-first",
-                          )}
-                        >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-6 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted"
                               >
-                                <MoreVertical className="size-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align={isRightSide ? "start" : "end"}
-                            >
-                              <DropdownMenuItem className="cursor-pointer">
-                                <Reply className="size-4" />
-                                Phản hồi
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="cursor-pointer">
-                                <Copy className="size-4" />
-                                Sao chép
-                              </DropdownMenuItem>
-                              {message.role === "staff" && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                                    <Trash2 className="size-4" />
-                                    Xóa
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                                <User className="size-5 text-muted-foreground" />
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                        )}
                       </div>
-
-                      {message.reactions.length > 0 && (
-                        <div
-                          className={cn(
-                            "flex gap-1 mt-1 px-1",
-                            isRightSide && "justify-end",
-                          )}
-                        >
-                          {message.reactions.map((reaction, idx) => (
-                            <button
-                              type="button"
-                              key={idx}
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
-                            >
-                              <span>{reaction.emoji}</span>
-                              <span className="text-muted-foreground">
-                                {reaction.count}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
 
                       <div
                         className={cn(
-                          "flex items-center gap-1 mt-0.5 px-1 text-[10px] text-muted-foreground/60",
-                          isRightSide && "flex-row-reverse",
+                          "flex-1 max-w-[75%] flex flex-col",
+                          isRightSide ? "items-end" : "items-start",
                         )}
                       >
-                        <span>{formatMessageTime(message.timestamp)}</span>
-                        {message.isEdited && (
-                          <span className="italic">(đã sửa)</span>
+                        {showName && (
+                          <div
+                            className={cn(
+                              "mb-1 px-1",
+                              isRightSide && "text-right",
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "flex items-center gap-1.5",
+                                isRightSide && "flex-row-reverse",
+                              )}
+                            >
+                              <span className="text-xs font-semibold text-foreground/80">
+                                {userName}
+                              </span>
+                              {roleBadge && (
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-medium px-1.5 py-0.5 rounded-full leading-none",
+                                    roleBadge.color,
+                                  )}
+                                >
+                                  {roleBadge.label}
+                                </span>
+                              )}
+                            </div>
+                            {message.role === "user" &&
+                              (message.user?.sdt || message.user?.email) && (
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 mt-0.5">
+                                  {message.user.email && (
+                                    <span>{message.user.email}</span>
+                                  )}
+                                  {message.user.sdt && message.user.email && (
+                                    <span>·</span>
+                                  )}
+                                  {message.user.sdt && (
+                                    <span>{message.user.sdt}</span>
+                                  )}
+                                </div>
+                              )}
+                          </div>
                         )}
-                        {message.role === "staff" && (
-                          <CheckCheck className="size-3" />
+
+                        <div className="relative group/message flex items-center gap-1">
+                          <div
+                            className={cn(
+                              "rounded-2xl px-3.5 py-2 text-sm leading-relaxed w-fit max-w-full",
+                              message.role === "bot" ||
+                                message.role === "customer"
+                                ? "bg-primary/10 dark:bg-primary/15 border border-primary/20 text-foreground rounded-br-sm"
+                                : message.role === "user"
+                                  ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-foreground rounded-bl-sm"
+                                  : message.role === "staff"
+                                    ? "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-foreground rounded-bl-sm"
+                                    : "bg-muted text-foreground rounded-bl-sm",
+                            )}
+                          >
+                            {message.role === "bot" ? (
+                              renderBotMessageContent(message.content)
+                            ) : (
+                              <p className="wrap-break-word whitespace-pre-wrap">
+                                {message.content}
+                              </p>
+                            )}
+
+                            {message.attachments &&
+                              message.attachments.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {message.attachments.map((attachment) => (
+                                    <MessageAttachment
+                                      key={attachment.id}
+                                      attachment={attachment}
+                                      isOwnMessage={isRightSide}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                          </div>
+
+                          <div
+                            className={cn(
+                              "opacity-0 group-hover/message:opacity-100 transition-opacity shrink-0",
+                              isRightSide && "order-first",
+                            )}
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-6 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted"
+                                >
+                                  <MoreVertical className="size-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align={isRightSide ? "start" : "end"}
+                              >
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Reply className="size-4" />
+                                  Phản hồi
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Copy className="size-4" />
+                                  Sao chép
+                                </DropdownMenuItem>
+                                {message.role === "staff" && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                                      <Trash2 className="size-4" />
+                                      Xóa
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {message.reactions.length > 0 && (
+                          <div
+                            className={cn(
+                              "flex gap-1 mt-1 px-1",
+                              isRightSide && "justify-end",
+                            )}
+                          >
+                            {message.reactions.map((reaction, idx) => (
+                              <button
+                                type="button"
+                                key={idx}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
+                              >
+                                <span>{reaction.emoji}</span>
+                                <span className="text-muted-foreground">
+                                  {reaction.count}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         )}
+
+                        <div
+                          className={cn(
+                            "flex items-center gap-1 mt-0.5 px-1 text-[10px] text-muted-foreground/60",
+                            isRightSide && "flex-row-reverse",
+                          )}
+                        >
+                          <span>{formatMessageTime(message.timestamp)}</span>
+                          {message.isEdited && (
+                            <span className="italic">(đã sửa)</span>
+                          )}
+                          {message.role === "staff" && (
+                            <CheckCheck className="size-3" />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* Typing indicator */}
-        {isTyping && (
-          <div
-            className={cn("flex gap-3", isTypingRight && "flex-row-reverse")}
-          >
-            <div className="w-9 shrink-0">
-              <Avatar className="size-9 border-2 border-background shadow-sm">
-                {typingRole === "bot" ? (
-                  <AvatarFallback
-                    className={cn(getRoleColor("bot"), "text-white")}
-                  >
-                    <Bot className="size-5" />
-                  </AvatarFallback>
-                ) : typingRole === "customer" ? (
-                  <AvatarFallback
-                    className={cn(
-                      getRoleColor("customer"),
-                      "text-white text-xs font-medium",
-                    )}
-                  >
-                    <User className="size-5" />
-                  </AvatarFallback>
-                ) : (
-                  <AvatarFallback className="bg-muted text-muted-foreground">
-                    <User className="size-5" />
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </div>
+          {/* Typing indicator */}
+          {isTyping && (
             <div
-              className={cn(
-                "flex-1 max-w-[70%] flex flex-col",
-                isTypingRight ? "items-end" : "items-start",
-              )}
+              className={cn("flex gap-3", isTypingRight && "flex-row-reverse")}
             >
-              {typingText}
+              <div className="w-9 shrink-0">
+                <Avatar className="size-9 border-2 border-background shadow-sm">
+                  {typingRole === "bot" ? (
+                    <AvatarFallback
+                      className={cn(getRoleColor("bot"), "text-white")}
+                    >
+                      <Bot className="size-5" />
+                    </AvatarFallback>
+                  ) : typingRole === "customer" ? (
+                    <AvatarFallback
+                      className={cn(
+                        getRoleColor("customer"),
+                        "text-white text-xs font-medium",
+                      )}
+                    >
+                      <User className="size-5" />
+                    </AvatarFallback>
+                  ) : (
+                    <AvatarFallback className="bg-muted text-muted-foreground">
+                      <User className="size-5" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </div>
               <div
                 className={cn(
-                  "rounded-2xl px-4 py-2.5 text-sm bg-muted",
-                  isTypingRight ? "rounded-br-md" : "rounded-bl-md",
+                  "flex-1 max-w-[70%] flex flex-col",
+                  isTypingRight ? "items-end" : "items-start",
                 )}
               >
-                <div className="flex gap-1 items-center">
-                  <span
-                    className="animate-bounce inline-block"
-                    style={{ animationDelay: "0ms" }}
-                  >
-                    ●
-                  </span>
-                  <span
-                    className="animate-bounce inline-block"
-                    style={{ animationDelay: "150ms" }}
-                  >
-                    ●
-                  </span>
-                  <span
-                    className="animate-bounce inline-block"
-                    style={{ animationDelay: "300ms" }}
-                  >
-                    ●
-                  </span>
+                {typingText}
+                <div
+                  className={cn(
+                    "rounded-2xl px-4 py-2.5 text-sm bg-muted",
+                    isTypingRight ? "rounded-br-md" : "rounded-bl-md",
+                  )}
+                >
+                  <div className="flex gap-1 items-center">
+                    <span
+                      className="animate-bounce inline-block"
+                      style={{ animationDelay: "0ms" }}
+                    >
+                      ●
+                    </span>
+                    <span
+                      className="animate-bounce inline-block"
+                      style={{ animationDelay: "150ms" }}
+                    >
+                      ●
+                    </span>
+                    <span
+                      className="animate-bounce inline-block"
+                      style={{ animationDelay: "300ms" }}
+                    >
+                      ●
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div ref={bottomRef} />
-      </div>
-    </ScrollArea>
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
 
       {!shouldAutoScroll && (
         <Button
