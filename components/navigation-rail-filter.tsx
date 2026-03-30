@@ -416,7 +416,8 @@ export function NavigationRailFilter({
   columnOptions = [],
   columnVisibility = {},
   onColumnVisibilityChange,
-  verticalDockPositionClassName = "-translate-y-[20%]",
+  /** Để trống mặc định: translate dễ làm dock bị cắt khi nhiều mục + overflow-hidden ở layout cha. */
+  verticalDockPositionClassName = "",
   orientation = "vertical",
   searchIcon,
   selectIcon,
@@ -655,7 +656,12 @@ export function NavigationRailFilter({
   };
 
   return (
-    <div className={cn("relative flex h-full bg-background", className)}>
+    <div
+      className={cn(
+        "relative flex h-full min-h-0 min-w-0 bg-background",
+        className,
+      )}
+    >
       {/* Collapsed Dock (macOS-like) */}
       <AnimatePresence mode="wait">
         {!isExpanded && (
@@ -665,8 +671,10 @@ export function NavigationRailFilter({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "flex items-center z-10",
-              orientation === "vertical" ? "h-full" : "w-full justify-center",
+              "z-10 min-h-0",
+              orientation === "vertical"
+                ? "flex h-full w-full flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain py-2"
+                : "flex w-full min-w-0 items-center justify-center overflow-x-auto overflow-y-hidden",
               verticalDockPositionClassName,
             )}
           >
@@ -855,11 +863,11 @@ export function NavigationRailFilter({
               damping: 30,
               mass: 1,
             }}
-            className="flex flex-col bg-background border-r border-border overflow-hidden h-full pointer-events-auto"
+            className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r border-border bg-background pointer-events-auto"
           >
             {/* Header */}
             <motion.div
-              className="p-4 border-b border-border flex-shrink-0"
+              className="shrink-0 border-b border-border p-4"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.2 }}
@@ -909,7 +917,7 @@ export function NavigationRailFilter({
             </motion.div>
 
             {/* Filter Content */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="min-h-0 flex-1">
               <motion.div
                 className="p-4 space-y-5"
                 initial={{ opacity: 0, y: 20 }}
@@ -1338,7 +1346,7 @@ export function NavigationRailFilter({
 
             {/* Footer Actions */}
             <motion.div
-              className="p-4 border-t border-border bg-muted/30 flex-shrink-0 space-y-3"
+              className="shrink-0 space-y-3 border-t border-border bg-muted/30 p-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{

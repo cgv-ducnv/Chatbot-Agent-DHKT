@@ -1,5 +1,5 @@
-import { lightRagApi } from "@/lib/light-rag-client";
-
+// import { apiClient } from "@/lib/light-rag-client";
+import apiClient from "@/lib/api-client";
 // Response interface Document
 export interface DocumentMetadata {
   processing_start_time?: number;
@@ -93,7 +93,7 @@ export interface TrackStatusResponse {
 }
 
 /**
- * Client gọi LightRAG Documents API (qua {@link lightRagApi}: base URL + Bearer token).
+ * Client gọi LightRAG Documents API (qua {@link apiClient}: base URL + Bearer token).
  *
  * Nhóm chức năng:
  * - 🧠 INGEST DATA — đưa dữ liệu vào RAG
@@ -113,7 +113,7 @@ export const documentsService = {
    * **Dùng khi:** Không upload qua API mà drop file trực tiếp vào folder server.
    */
   scanNewDocuments: async () => {
-    const response = await lightRagApi.post("/documents/scan");
+    const response = await apiClient.post("/documents/scan");
     return response.data;
   },
 
@@ -133,7 +133,7 @@ export const documentsService = {
    * @param file - File cần upload
    */
   uploadDocument: async (file: File) => {
-    const response = await lightRagApi.post("/documents/upload", { file });
+    const response = await apiClient.post("/documents/upload", { file });
     return response.data;
   },
 
@@ -148,7 +148,7 @@ export const documentsService = {
    * @param text - Nội dung text
    */
   insertText: async (file_source: string, text: string) => {
-    const response = await lightRagApi.post("/documents/text", {
+    const response = await apiClient.post("/documents/text", {
       file_source,
       text,
     });
@@ -166,7 +166,7 @@ export const documentsService = {
    * @param texts - Mảng các đoạn text
    */
   insertTexts: async (file_source: string, texts: string[]) => {
-    const response = await lightRagApi.post("/documents/texts", {
+    const response = await apiClient.post("/documents/texts", {
       file_source,
       texts,
     });
@@ -183,7 +183,7 @@ export const documentsService = {
    * Ưu tiên dùng {@link documentsService.documentPaginated} cho UI dashboard / dữ liệu lớn.
    */
   getDocuments: async () => {
-    const response = await lightRagApi.get("/documents");
+    const response = await apiClient.get("/documents");
     return response.data;
   },
 
@@ -193,7 +193,7 @@ export const documentsService = {
    * Gọi `DELETE` tới `/documents`.
    */
   deleteDocuments: async () => {
-    const response = await lightRagApi.delete("/documents");
+    const response = await apiClient.delete("/documents");
     return response.data;
   },
 
@@ -209,7 +209,7 @@ export const documentsService = {
    * @param entity_name - Tên entity cần xóa
    */
   deleteEntity: async (entity_name: string) => {
-    const response = await lightRagApi.delete("/documents/entity", {
+    const response = await apiClient.delete("/documents/entity", {
       data: { entity_name },
     });
     return response.data;
@@ -225,7 +225,7 @@ export const documentsService = {
    * **Dùng khi:** Muốn reset kết quả hoặc debug hệ thống RAG.
    */
   clearCache: async () => {
-    const response = await lightRagApi.delete("/documents/clear_cache");
+    const response = await apiClient.delete("/documents/clear_cache");
     return response.data;
   },
 
@@ -240,7 +240,7 @@ export const documentsService = {
    * @param target_entity - Entity đích
    */
   deleteRelations: async (source_entity: string, target_entity: string) => {
-    const response = await lightRagApi.delete("/documents/delete_relation", {
+    const response = await apiClient.delete("/documents/delete_relation", {
       data: { source_entity, target_entity },
     });
     return response.data;
@@ -259,7 +259,7 @@ export const documentsService = {
     if (!ids.length) {
       throw new Error("doc_ids không được rỗng");
     }
-    const response = await lightRagApi.delete(
+    const response = await apiClient.delete(
       `/documents/delete_document/${encodeURIComponent(ids[0])}`,
       {
         data: {
@@ -297,7 +297,7 @@ export const documentsService = {
    * @param document_id - `track_id` (hoặc id theo contract backend) trả về từ upload/insert
    */
   getTrackStatus: async (document_id: string) => {
-    const response = await lightRagApi.get(
+    const response = await apiClient.get(
       `/documents/track_status/${document_id}`,
     );
     return response.data;
@@ -329,7 +329,7 @@ export const documentsService = {
       sort_field,
       ...(status_filter ? { status_filter } : {}),
     };
-    const response = await lightRagApi.post("/documents/paginated", body);
+    const response = await apiClient.post("/documents/paginated", body);
     return response.data;
   },
 
@@ -341,7 +341,7 @@ export const documentsService = {
    * **Dùng khi:** Dashboard thống kê tổng quan.
    */
   getStatusCounts: async () => {
-    const response = await lightRagApi.get("/documents/status_counts");
+    const response = await apiClient.get("/documents/status_counts");
     return response.data;
   },
 
@@ -355,7 +355,7 @@ export const documentsService = {
    * **Dùng khi:** Server crash, LLM lỗi, cần retry hàng loạt.
    */
   reprocessFailedDocuments: async () => {
-    const response = await lightRagApi.post("/documents/reprocess_failed");
+    const response = await apiClient.post("/documents/reprocess_failed");
     return response.data;
   },
 
@@ -367,7 +367,7 @@ export const documentsService = {
    * **Dùng khi:** Debug hệ thống — rất quan trọng để theo dõi xử lý.
    */
   getDocumentPinelineStatus: async () => {
-    const response = await lightRagApi.get("/documents/pipeline_status");
+    const response = await apiClient.get("/documents/pipeline_status");
     return response.data;
   },
 
@@ -381,7 +381,7 @@ export const documentsService = {
    * @param document_id - Id document / job liên quan pipeline cần hủy
    */
   cancelPipeline: async (document_id: string) => {
-    const response = await lightRagApi.post("/documents/cancel_pipeline", {
+    const response = await apiClient.post("/documents/cancel_pipeline", {
       document_id,
     });
     return response.data;

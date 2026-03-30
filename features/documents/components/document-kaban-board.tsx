@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { DocumentUploadButton } from "./document-upload-button";
+import { DocumentDataTableToolbar } from "./document-data-table-toolbar";
 
 interface DocumentKabanBoardProps {
   documents: DocumentItem[];
@@ -321,18 +322,18 @@ export function DocumentKabanBoard({
           <DocumentUploadButton />
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 2xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, idx) => (
-          <Card key={idx} className="h-[420px]">
-            <CardHeader>
-              <Skeleton className="h-6 w-24" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <Card key={idx} className="h-[420px]">
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -358,33 +359,32 @@ export function DocumentKabanBoard({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <DocumentUploadButton />
-      </div>
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex h-[70vh] min-h-[520px] gap-4 overflow-x-auto overflow-y-auto pb-4 pr-2">
-        {BOARD_COLUMNS.map((column) => (
-          <DocumentKanbanColumn
-            key={column.id}
-            id={column.id}
-            title={column.label}
-            documents={getDocsByStatus(column.id)}
-          />
-        ))}
-      </div>
+      <DocumentDataTableToolbar />
 
-      <DragOverlay>
-        {activeDocument ? (
-          <DocumentKabanCard document={activeDocument} draggable={false} />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex h-[70vh] min-h-[520px] gap-4 overflow-x-auto overflow-y-auto pb-4 pr-2">
+          {BOARD_COLUMNS.map((column) => (
+            <DocumentKanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.label}
+              documents={getDocsByStatus(column.id)}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeDocument ? (
+            <DocumentKabanCard document={activeDocument} draggable={false} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

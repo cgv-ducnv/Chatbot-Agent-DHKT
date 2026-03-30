@@ -6,12 +6,6 @@ import { useAIConfig } from "@/hooks/ai-configs/services";
 import { useParams, useRouter } from "next/navigation";
 
 import { toast } from "sonner";
-import { DataTable } from "@/features/sources/components/sources-table-data-list";
-import { useSources } from "@/hooks/sources/use-sources";
-import type { Sources } from "@/features/sources/utils/schema";
-import { useState } from "react";
-import { SourcesFormDialog } from "@/features/sources/components/sources-form-modal";
-import { useDeleteSource } from "@/hooks/sources/use-sources";
 import { FAQsDataTableList } from "@/features/faqs/components/faqs-data-table-list";
 import { FAQFormDialog } from "@/features/faqs/components/faqs-form-modal";
 import {
@@ -22,6 +16,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFaqs, useDeleteFaq } from "@/hooks/faqs/use-faqs";
 import type { FAQ } from "@/features/faqs/utils/schema";
 import { useQueryParam, NumberParam, withDefault } from "use-query-params";
+import { PERMISSIONS } from "@/constants/permission";
+import { EmptyData } from "@/components/empty-data";
 
 import {
   Dialog,
@@ -39,30 +35,14 @@ import {
 } from "@/components/navigation-rail-filter";
 import { AIConfig } from "@/features/ai-configs/utils/schema";
 import { ArrowUpAZ, ArrowDownAZ, Clock } from "lucide-react";
-
-// Sort options for Sources
-const sourcesSortOptions: FilterOption[] = [
-  {
-    value: "name_asc",
-    label: "Tên A-Z",
-    icon: <ArrowUpAZ className="size-4" />,
-  },
-  {
-    value: "name_desc",
-    label: "Tên Z-A",
-    icon: <ArrowDownAZ className="size-4" />,
-  },
-  {
-    value: "created_at_desc",
-    label: "Mới nhất",
-    icon: <Clock className="size-4" />,
-  },
-  {
-    value: "created_at_asc",
-    label: "Cũ nhất",
-    icon: <Clock className="size-4" />,
-  },
-];
+import {
+  DocumentsDashboardContent,
+  useDocumentsDashboardController,
+} from "@/features/documents/components/documents-dashboard";
+import { useState } from "react";
+import { ShieldX } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
+import { Spinner } from "@/components/ui/spinner";
 
 // Sort options for FAQs
 const faqsSortOptions: FilterOption[] = [
@@ -93,14 +73,6 @@ const faqsSortOptions: FilterOption[] = [
   },
 ];
 
-// Column options for Sources
-const sourcesColumnOptions: ColumnOption[] = [
-  { id: "name", label: "Tên nguồn" },
-  { id: "type", label: "Loại" },
-  { id: "status", label: "Trạng thái" },
-  { id: "created_at", label: "Ngày tạo" },
-];
-
 // Column options for FAQs
 const faqsColumnOptions: ColumnOption[] = [
   { id: "question", label: "Câu hỏi" },
@@ -116,12 +88,9 @@ export default function AIConfigDetailPage() {
 
   const { data, isLoading, error } = useAIConfig(aiconfigId);
 
-  // Filter state for Sources
-  const [sourcesSearch, setSourcesSearch] = useState("");
-  const [sourcesSort, setSourcesSort] = useState<string | undefined>();
-  const [sourcesColumnVisibility, setSourcesColumnVisibility] = useState<
-    Record<string, boolean>
-  >({});
+  const { hasAnyPermission, isLoading: isAuthLoading } = useAuth();
+  const canViewSource = hasAnyPermission([PERMISSIONS.VIEW_SOURCES]);
+  const canViewFaqs = hasAnyPermission([PERMISSIONS.VIEW_FAQS]);
 
   // Filter + pagination state for FAQs
   const [faqsSearch, setFaqsSearch] = useState("");
@@ -148,16 +117,7 @@ export default function AIConfigDetailPage() {
     return { sort_by, sort_order };
   };
 
-  const sourcesSortParams = parseSort(sourcesSort);
   const faqsSortParams = parseSort(faqsSort);
-
-  // Fetch sources for this AI config
-  const { data: sourcesData, isLoading: isLoadingSources } = useSources({
-    ai_config_id: aiconfigId,
-    search: sourcesSearch || undefined,
-    sort_by: sourcesSortParams.sort_by,
-    sort_order: sourcesSortParams.sort_order,
-  });
 
   // Fetch FAQs for this AI config
   const { data: faqsResponse, isLoading: isLoadingFaqs } = useFaqs({
@@ -171,21 +131,7 @@ export default function AIConfigDetailPage() {
 
   const config = data?.data ?? null;
 
-  // Sources Data Processing
-  const sourcesListData = sourcesData;
-  const sources = sourcesListData?.data.data.sources ?? [];
-  const pagination = sourcesListData
-    ? {
-        total: sourcesListData.data.data.total_records,
-        page: sourcesListData.data.data.current_page,
-        page_size: sourcesListData.data.data.page_size,
-        total_pages: sourcesListData.data.data.total_pages,
-      }
-    : undefined;
-
   // FAQs Data Processing
-  // Assuming the response structure matches sources (data.data.faqs or data.data.items)
-  // Adjust 'faqs' accessor if API response differs
   const faqsListData = faqsResponse?.data;
   const faqs =
     (faqsListData?.data as any)?.faqs ??
@@ -202,93 +148,46 @@ export default function AIConfigDetailPage() {
     : undefined;
 
   const handleEdit = (config: AIConfig) => {
-    // Navigate back to list with edit modal, or handle inline edit
     toast.info(`Chỉnh sửa cấu hình: ${config.name}`);
-    // You can implement edit modal logic here or navigate
     router.push(`/ai-configs?edit=${config.id}`);
-  };
-
-  // State for edit modal
-  const [editingSource, setEditingSource] = useState<Sources | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const handleEditSource = (source: Sources) => {
-    setEditingSource(source);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditModalClose = (open: boolean) => {
-    setIsEditModalOpen(open);
-    if (!open) {
-      setEditingSource(null);
-    }
   };
 
   // State for feature tabs
   const [activeFeature, setActiveFeature] = useState<string | null>("source");
 
-  // Filter handlers based on active tab
+  const documentsController = useDocumentsDashboardController({
+    paramSource: "local",
+    enabled: activeFeature === "source" && canViewSource,
+  });
+
   const handleSearchChange = (value: string) => {
-    if (activeFeature === "source") {
-      setSourcesSearch(value);
-    } else if (activeFeature === "faqs") {
+    if (activeFeature === "faqs") {
       setFaqsSearch(value);
     }
   };
 
   const handleSortChange = (value: string) => {
-    if (activeFeature === "source") {
-      setSourcesSort(value || undefined);
-    } else if (activeFeature === "faqs") {
+    if (activeFeature === "faqs") {
       setFaqsSort(value || undefined);
     }
   };
 
   const handleClearFilters = () => {
-    if (activeFeature === "source") {
-      setSourcesSearch("");
-      setSourcesSort(undefined);
-    } else if (activeFeature === "faqs") {
+    if (activeFeature === "faqs") {
       setFaqsSearch("");
       setFaqsSort(undefined);
     }
   };
 
   const handleColumnVisibilityChange = (columnId: string, visible: boolean) => {
-    if (activeFeature === "source") {
-      setSourcesColumnVisibility((prev) => ({ ...prev, [columnId]: visible }));
-    } else if (activeFeature === "faqs") {
+    if (activeFeature === "faqs") {
       setFaqsColumnVisibility((prev) => ({ ...prev, [columnId]: visible }));
     }
   };
 
-  // Get current filter values based on active tab
   const currentSearchPlaceholder =
-    activeFeature === "source"
-      ? "Tìm kiếm nguồn dữ liệu..."
-      : activeFeature === "faqs"
-        ? "Tìm kiếm FAQ..."
-        : "Tìm kiếm...";
+    activeFeature === "faqs" ? "Tìm kiếm FAQ..." : "Tìm kiếm...";
 
-  const currentSortOptions =
-    activeFeature === "source" ? sourcesSortOptions : faqsSortOptions;
-
-  const currentSortValue = activeFeature === "source" ? sourcesSort : faqsSort;
-
-  const currentColumnOptions =
-    activeFeature === "source" ? sourcesColumnOptions : faqsColumnOptions;
-
-  const currentColumnVisibility =
-    activeFeature === "source" ? sourcesColumnVisibility : faqsColumnVisibility;
-
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const deleteSourceMutation = useDeleteSource();
-
-  const handleDeleteSource = (id: number) => {
-    setDeleteId(id);
-  };
-
-  // State for FAQ actions
   const [deleteFaqId, setDeleteFaqId] = useState<number | null>(null);
   const deleteFaqMutation = useDeleteFaq();
 
@@ -321,19 +220,25 @@ export default function AIConfigDetailPage() {
 
   const renderFeatureContent = () => {
     switch (activeFeature) {
-      case "source":
-        return (
-          <div className="h-full">
-            <DataTable
-              sources={sources}
-              onDeleteSource={handleDeleteSource}
-              onEditSource={handleEditSource}
-              pagination={pagination}
-              isLoading={isLoadingSources}
-            />
-          </div>
-        );
       case "faqs":
+        if (isAuthLoading) {
+          return (
+            <div className="flex min-h-[min(70vh,720px)] w-full items-center justify-center p-6">
+              <Spinner className="size-8 text-primary" />
+            </div>
+          );
+        }
+        if (!canViewFaqs) {
+          return (
+            <EmptyData
+              icon={ShieldX}
+              title="403"
+              description="Bạn không có quyền truy cập FAQ."
+              showButton={false}
+              className="w-full"
+            />
+          );
+        }
         return (
           <div className="h-full min-w-0">
             <FAQsDataTableList
@@ -346,7 +251,7 @@ export default function AIConfigDetailPage() {
             />
           </div>
         );
-      default:
+      default: {
         const feature = AI_CONFIG_FEATURES.find((f) => f.id === activeFeature);
         if (!feature) return null;
         const Icon = feature.icon;
@@ -361,22 +266,6 @@ export default function AIConfigDetailPage() {
             </p>
           </div>
         );
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (deleteId) {
-      try {
-        const response: any = await deleteSourceMutation.mutateAsync(deleteId);
-        if (response.data.status_code === 200) {
-          toast.success("Xóa nguồn dữ liệu thành công!");
-        } else {
-          toast.error(response.data.message || "Xóa nguồn dữ liệu thất bại!");
-        }
-      } catch (error) {
-        toast.error("Xóa nguồn dữ liệu thất bại!");
-      } finally {
-        setDeleteId(null);
       }
     }
   };
@@ -385,7 +274,6 @@ export default function AIConfigDetailPage() {
     if (deleteFaqId) {
       try {
         const response: any = await deleteFaqMutation.mutateAsync(deleteFaqId);
-        // Check response structure. Assuming similar to deleteSource
         if (response && response.data.status_code == 200) {
           toast.success("Xóa FAQ thành công!");
         } else {
@@ -455,69 +343,61 @@ export default function AIConfigDetailPage() {
             className="min-w-0 w-full overflow-hidden"
           >
             <div className="min-w-0 border rounded-xl bg-card shadow-sm overflow-hidden">
-              <div className="flex min-h-[min(70vh,720px)] w-full">
-                <NavigationRailFilter
-                  className="shrink-0 border-r border-border min-h-[min(70vh,720px)]"
-                  verticalDockPositionClassName="px-2"
-                  searchPlaceholder={currentSearchPlaceholder}
-                  onSearchChange={handleSearchChange}
-                  searchDebounceMs={500}
-                  selectLabel="Sắp xếp"
-                  selectOptions={currentSortOptions}
-                  selectValue={currentSortValue}
-                  onSelectChange={handleSortChange}
-                  onClearAll={handleClearFilters}
-                  columnOptions={currentColumnOptions}
-                  columnVisibility={currentColumnVisibility}
-                  onColumnVisibilityChange={handleColumnVisibilityChange}
-                />
-                <div className="min-w-0 flex-1 overflow-hidden p-6">
-                  {renderFeatureContent()}
+              {activeFeature === "source" ? (
+                isAuthLoading ? (
+                  <div className="flex min-h-[min(70vh,720px)] w-full items-center justify-center p-6">
+                    <Spinner className="size-8 text-primary" />
+                  </div>
+                ) : canViewSource ? (
+                  <div className="flex min-h-[min(70vh,720px)] w-full">
+                    <NavigationRailFilter
+                      className="shrink-0  border-border min-h-[min(70vh,720px)]"
+                      verticalDockPositionClassName="px-2"
+                      {...documentsController.railProps}
+                    />
+                    <DocumentsDashboardContent
+                      controller={documentsController}
+                      showBreadcrumb={false}
+                      className="min-w-0 flex-1"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex min-h-[min(70vh,720px)] w-full items-center justify-center p-6">
+                    <EmptyData
+                      icon={ShieldX}
+                      title="403"
+                      description="Bạn không có quyền truy cập nguồn dữ liệu."
+                      showButton={false}
+                      className="max-w-[520px] w-full"
+                    />
+                  </div>
+                )
+              ) : (
+                <div className="flex min-h-[min(70vh,720px)] w-full">
+                  <NavigationRailFilter
+                    className="shrink-0 border-border min-h-[min(70vh,720px)]"
+                    verticalDockPositionClassName="px-2"
+                    searchPlaceholder={currentSearchPlaceholder}
+                    onSearchChange={handleSearchChange}
+                    searchDebounceMs={500}
+                    selectLabel="Sắp xếp"
+                    selectOptions={faqsSortOptions}
+                    selectValue={faqsSort}
+                    onSelectChange={handleSortChange}
+                    onClearAll={handleClearFilters}
+                    columnOptions={faqsColumnOptions}
+                    columnVisibility={faqsColumnVisibility}
+                    onColumnVisibilityChange={handleColumnVisibilityChange}
+                  />
+                  <div className="min-w-0 flex-1 overflow-hidden p-6">
+                    {renderFeatureContent()}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Edit Source Modal */}
-      <SourcesFormDialog
-        source={editingSource}
-        open={isEditModalOpen}
-        onOpenChange={handleEditModalClose}
-        aiConfigId={aiconfigId}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bạn có chắc chắn muốn xóa?</DialogTitle>
-            <DialogDescription>
-              Hành động này không thể hoàn tác. Nguồn dữ liệu sẽ bị xóa vĩnh
-              viễn khỏi hệ thống.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                handleConfirmDelete();
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white"
-              disabled={deleteSourceMutation.isPending}
-            >
-              {deleteSourceMutation.isPending ? "Đang xóa..." : "Xóa"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete FAQ Confirmation Dialog */}
       <Dialog

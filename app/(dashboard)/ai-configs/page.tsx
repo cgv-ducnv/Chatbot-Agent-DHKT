@@ -13,7 +13,7 @@ import {
 } from "use-query-params";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AppBreadcrumb } from "@/components/breadcrumb";
-import { Home, ArrowUpAZ, ArrowDownAZ, Clock, Bot } from "lucide-react";
+import { Home, ArrowUpAZ, ArrowDownAZ, Clock } from "lucide-react";
 import {
   NavigationRailFilter,
   type FilterOption,

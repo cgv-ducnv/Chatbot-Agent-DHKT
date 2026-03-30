@@ -12,17 +12,15 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { StatOverview } from "@/services/stats/service";
 // import { useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
+import { toast } from "sonner";
+import { EmptyData } from "@/components/empty-data";
+import { useEffect, useRef } from "react";
 
 const RADIAN = Math.PI / 180;
 
@@ -72,11 +70,14 @@ export function PaymentMethodsBreakdown({
       }[]
     | undefined;
   let totalAmount = 0;
+  let totalForEmptyState = 0;
 
   if (isMessagesMode && messages) {
     const total =
       messages.totalInRange ||
       messages.aiMessages + messages.staffMessages + messages.userMessages;
+
+    totalForEmptyState = total;
 
     paymentMethodsData = [
       {
@@ -103,6 +104,8 @@ export function PaymentMethodsBreakdown({
       conversations.totalInRange ||
       conversations.aiActive + conversations.aiInactive;
 
+    totalForEmptyState = total;
+
     paymentMethodsData = [
       {
         name: "AI đang hoạt động",
@@ -126,9 +129,57 @@ export function PaymentMethodsBreakdown({
     );
   }
 
+  const isEmptyState = totalForEmptyState === 0 || totalAmount === 0;
+
+  const didToastRef = useRef(false);
+  useEffect(() => {
+    if (!paymentMethodsData) return;
+    if (!isEmptyState) {
+      didToastRef.current = false;
+      return;
+    }
+
+    if (!didToastRef.current) {
+      toast.warning("Không tìm thấy dữ liệu. Chọn mốc thời gian khác");
+      didToastRef.current = true;
+    }
+  }, [isEmptyState, paymentMethodsData]);
+
+  if (isEmptyState && paymentMethodsData) {
+    return (
+      <Card className="group h-full border-border/60 bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md overflow-hidden min-w-0">
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-radial from-emerald-500/10 via-transparent to-transparent" />
+        <CardHeader className="relative flex flex-col space-y-4 pb-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div>
+            <CardTitle>
+              {isMessagesMode
+                ? "Phân bổ loại tin nhắn"
+                : "Phân bổ cuộc hội thoại"}
+            </CardTitle>
+            <CardDescription>
+              Không tìm thấy dữ liệu. Chọn mốc thời gian khác
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="rounded-full font-mono tabular-nums">
+            0
+          </Badge>
+        </CardHeader>
+        <CardContent className="relative">
+          <EmptyData
+            icon={AlertCircle}
+            title="Không tìm thấy dữ liệu"
+            description="Không tìm thấy dữ liệu. Chọn mốc thời gian khác"
+            className="bg-background/40"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="h-full border-border/50 bg-linear-to-br from-emerald-500/5 via-background to-background shadow-sm transition-shadow hover:shadow-md overflow-hidden min-w-0">
-      <CardHeader className="flex flex-col space-y-4 pb-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+    <Card className="group relative h-full border-border/60 bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md overflow-hidden min-w-0">
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-radial from-emerald-500/10 via-transparent to-transparent" />
+      <CardHeader className="relative flex flex-col space-y-4 pb-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
           <CardTitle>
             {isMessagesMode
@@ -164,7 +215,7 @@ export function PaymentMethodsBreakdown({
             <div className="relative shrink-0">
               <ChartContainer
                 config={chartConfig}
-                className="h-[140px] w-[140px] sm:h-[180px] sm:w-[180px] mx-auto"
+                className="h-[150px] w-[150px] sm:h-[190px] sm:w-[190px] mx-auto"
               >
                 <PieChart>
                   <ChartTooltip
@@ -227,13 +278,15 @@ export function PaymentMethodsBreakdown({
                   </Pie>
                 </PieChart>
               </ChartContainer>
+              {/* subtle ring */}
+              <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-border/50" />
             </div>
           </div>
           <div className="grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-1 sm:flex-col">
             {paymentMethodsData?.map((method, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between gap-2"
+                className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/60 px-3 py-2 transition-colors hover:bg-background"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <div
@@ -245,7 +298,7 @@ export function PaymentMethodsBreakdown({
                   </span>
                 </div>
                 <div className="shrink-0 text-right space-y-0.5">
-                  <div className="text-xs font-semibold">
+                  <div className="text-xs font-semibold tabular-nums">
                     {method.amount.toLocaleString()}
                   </div>
                   <div className="text-[10px] text-muted-foreground">

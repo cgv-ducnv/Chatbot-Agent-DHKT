@@ -95,12 +95,12 @@ export const sidebarData: SidebarData = {
           icon: IconRobot,
           permissions: [PERMISSIONS.VIEW_AI_CONFIGS],
         },
-        {
-          title: "Quản lý tài liệu",
-          url: "/documents",
-          icon: IconFileStack,
-          permissions: [PERMISSIONS.VIEW_DOCUMENTS],
-        },
+        // {
+        //   title: "Quản lý tài liệu",
+        //   url: "/documents",
+        //   icon: IconFileStack,
+        //   permissions: [PERMISSIONS.VIEW_SOURCES],
+        // },
         {
           title: "Quản lý ticket",
           icon: IconReportMoney,

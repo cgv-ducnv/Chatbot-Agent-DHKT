@@ -109,14 +109,14 @@ export function DocumentPipelineBanner() {
             Pipeline
             {busy ? (
               <Badge className="border-amber-200/80 bg-amber-100/90 font-normal text-amber-900 shadow-none dark:border-amber-800/60 dark:bg-amber-950/60 dark:text-amber-100">
-                Đang bận
+                Đang hoạt động
               </Badge>
             ) : (
               <Badge
                 variant="secondary"
                 className="border-emerald-200/70 bg-emerald-100/70 font-normal text-emerald-900 dark:border-emerald-800/50 dark:bg-emerald-950/50 dark:text-emerald-100"
               >
-                Rảnh
+                Tạm ngưng
               </Badge>
             )}
             <Badge
@@ -237,7 +237,9 @@ export function DocumentPipelineBanner() {
                         </li>
                       ))
                     ) : (
-                      <li className="text-muted-foreground">Không có mục nào.</li>
+                      <li className="text-muted-foreground">
+                        Không có mục nào.
+                      </li>
                     )}
                   </ol>
                 </ScrollArea>
@@ -264,7 +266,8 @@ export function DocumentPipelineBanner() {
                 </div>
                 {updateEntries.length > 0 && (
                   <p className="mt-2 text-[10px] text-muted-foreground">
-                    Số dạng x/y: số bước đã xong / tổng số bước trong mảng boolean.
+                    Số dạng x/y: số bước đã xong / tổng số bước trong mảng
+                    boolean.
                   </p>
                 )}
               </div>

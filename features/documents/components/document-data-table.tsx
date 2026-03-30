@@ -311,7 +311,7 @@ export function DocumentDataTable({
                   <EmptyData
                     icon={IconMoodEmpty}
                     title="Chưa có tài liệu."
-                    description="Thử đổi bộ lọc trạng thái hoặc upload tài liệu qua API LightRAG."
+                    description="Thử đổi bộ lọc trạng thái hoặc upload tài liệu."
                     showButton={false}
                     buttonText=""
                     onButtonClick={() => {}}

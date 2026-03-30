@@ -49,7 +49,9 @@ async function fetchAccessTokenFromAuthStatus(): Promise<string> {
   const { data } = await authStatusClient.get<AuthStatusResponse>(url);
   const token = data.access_token?.trim();
   if (!token) {
-    throw new Error("LightRAG auth-status: thiếu access_token trong phản hồi.");
+    throw new Error(
+      "Kiểm tra lại auth-status: thiếu access_token trong phản hồi.",
+    );
   }
   return token;
 }

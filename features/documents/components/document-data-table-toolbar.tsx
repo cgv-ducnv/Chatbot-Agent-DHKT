@@ -16,7 +16,7 @@ interface DocumentDataTableToolbarProps {
 
 export function DocumentDataTableToolbar({
   title = "Danh sách tài liệu",
-  description = "Tài liệu đã đưa vào hệ thống hỏi đáp — phân trang và lọc theo trạng thái.",
+  description,
 }: DocumentDataTableToolbarProps) {
   const scan = useScanNewDocuments();
   const reprocess = useReprocessFailedDocuments();

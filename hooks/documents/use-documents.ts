@@ -182,7 +182,10 @@ export type DocumentPaginatedParams = {
     | "failed";
 };
 
-export const useDocumentPaginated = (params: DocumentPaginatedParams) => {
+export const useDocumentPaginated = (
+  params: DocumentPaginatedParams,
+  options?: { enabled?: boolean },
+) => {
   return useQuery({
     queryKey: ["documents-paginated", params],
     queryFn: () =>
@@ -194,6 +197,7 @@ export const useDocumentPaginated = (params: DocumentPaginatedParams) => {
         params.status_filter,
       ),
     placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
   });
 };
 

@@ -24,8 +24,7 @@ import { cn } from "@/lib/utils";
 
 type ButtonProps = ComponentProps<typeof Button>;
 
-const ACCEPT =
-  ".pdf,.doc,.docx,.txt,.md,.markdown,application/pdf,text/plain";
+const ACCEPT = ".pdf,.doc,.docx,.txt,.md,.markdown,application/pdf,text/plain";
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
@@ -116,8 +115,8 @@ export function DocumentUploadButton({
           <DialogHeader>
             <DialogTitle>Tải lên tài liệu</DialogTitle>
             <DialogDescription>
-              Chọn một tệp (PDF, Word, txt, …) để đưa vào pipeline xử lý
-              LightRAG. Sau khi tải lên, dùng track_id để theo dõi trạng thái.
+              Chọn một tệp (PDF, Word, txt, …) để đưa vào xử lý. Sau khi tải
+              lên, dùng track_id để theo dõi trạng thái.
             </DialogDescription>
           </DialogHeader>
 
@@ -174,7 +173,7 @@ export function DocumentUploadButton({
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
