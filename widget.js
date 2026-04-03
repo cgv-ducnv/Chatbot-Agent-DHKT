@@ -4,7 +4,7 @@
 
   const scriptEl = document.currentScript;
   const defaults = {
-    title: "Trợ lý ảo",
+    title: "Trợ lý tuyển sinh",
     subtitle: "Trực tuyến",
     brand: "ĐHKT",
     primaryColor: "#4f46e5",
@@ -23,7 +23,10 @@
     sessionId: null, // Session ID để track conversation
     faqAiConfigId: 1, // ID AI Config dùng cho FAQs
     faqSuggestionsLimit: 6, // Số câu hỏi gợi ý tối đa
+    showSuggestions: false, // Ẩn hoàn toàn khu vực câu hỏi gợi ý
     maxWords: 1000, // Giới hạn số từ tối đa cho một câu hỏi (match với .env MAX_WORDS)
+    launcherImageUrl: "./public/logo/Ai-Robot-Vector-Art_2026.gif", // Ảnh nền launcher
+    logoUrl: "/public/logo/image.png", // Logo thương hiệu dùng mặc định cho widget
   };
 
   // Mapping câu trả lời gán cứng cho Trường Đại Học Kiến Trúc Hà Nội
@@ -55,6 +58,263 @@
       "Tạm biệt bạn! Chúc bạn thành công trong việc tìm hiểu thông tin về trường. Nếu cần hỗ trợ thêm, hãy quay lại nhé! 👋",
   };
 
+  // ====== HELPERS CHUNG CHO FORMAT NỘI DUNG TIN NHẮN ======
+  const globalEscapeHtml = (s) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const globalFormatUrlLabel = (rawUrl) => {
+    try {
+      const u = new URL(rawUrl);
+      const host = u.host;
+      const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
+      const shortPath = path.length > 28 ? `${path.slice(0, 28)}…` : path;
+      return `${host}${shortPath}`;
+    } catch (e) {
+      return rawUrl;
+    }
+  };
+
+  const highlightLinksOnly = (text) => {
+    if (!text) return "";
+
+    const escaped = globalEscapeHtml(text);
+
+    const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
+
+    return escaped.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="cw-link">${url}</a>`;
+    });
+  };
+
+  /**
+   * Chuyển Markdown cơ bản sang HTML (dùng cho câu trả lời AI).
+   * Hỗ trợ: **bold**, ### headers, xuống dòng, gạch đầu dòng (* hoặc -).
+   * Input phải đã escape HTML.
+   */
+  const applySimpleMarkdown = (escapedStr) => {
+    if (!escapedStr) return "";
+    let t = escapedStr;
+    // **bold** -> <strong>bold</strong>
+    t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    // ### Header -> <h3>
+    t = t.replace(/^###\s+(.+)$/gm, '<h3 class="cw-h3">$1</h3>');
+    t = t.replace(/^##\s+(.+)$/gm, '<h3 class="cw-h3">$1</h3>');
+    t = t.replace(/^#\s+(.+)$/gm, '<h3 class="cw-h3">$1</h3>');
+    // Dòng bắt đầu bằng * hoặc - (bullet) -> <li>
+    const lines = t.split(/\n/);
+    const result = [];
+    let inList = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const bulletMatch = line.match(/^\s*[\*\-\•]\s+(.+)$/);
+      if (bulletMatch) {
+        if (!inList) {
+          result.push('<ul class="cw-bullet-list">');
+          inList = true;
+        }
+        result.push("<li>" + bulletMatch[1].trim() + "</li>");
+      } else {
+        if (inList) {
+          result.push("</ul>");
+          inList = false;
+        }
+        if (line.trim()) {
+          const trimmed = line.trim();
+          // Không bọc thẻ block (h1-h6) trong <p>
+          if (/^<h[1-6]/.test(trimmed)) {
+            result.push(trimmed);
+          } else {
+            result.push("<p>" + trimmed + "</p>");
+          }
+        }
+      }
+    }
+    if (inList) result.push("</ul>");
+    return result.length ? result.join("") : t.replace(/\n/g, "<br>");
+  };
+
+  /**
+   * Cho phép chỉ các thẻ HTML an toàn sau khi escape. AI đôi khi trả về <p><b>...
+   * thay vì Markdown - ta unescape những thẻ này để render đúng.
+   */
+  const ALLOWED_TAGS = [
+    "p",
+    "/p",
+    "b",
+    "/b",
+    "strong",
+    "/strong",
+    "em",
+    "/em",
+    "br",
+    "ul",
+    "/ul",
+    "ol",
+    "/ol",
+    "li",
+    "/li",
+  ];
+  const unescapeAllowedTags = (escapedStr) => {
+    let t = escapedStr;
+    // globalEscapeHtml đổi & thành &amp; nên &lt; thành &amp;lt; - cần match cả hai
+    const entity = (s) => s.replace(/&/g, "&amp;");
+    for (const tag of ALLOWED_TAGS) {
+      const rawOpen = tag.startsWith("/") ? `</${tag.slice(1)}>` : `<${tag}>`;
+      const escapedOpen = tag.startsWith("/")
+        ? `&lt;/${tag.slice(1)}&gt;`
+        : `&lt;${tag}&gt;`;
+      const doubleEscapedOpen = entity(escapedOpen);
+      t = t.replace(
+        new RegExp(
+          doubleEscapedOpen.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "gi",
+        ),
+        rawOpen,
+      );
+      t = t.replace(
+        new RegExp(escapedOpen.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+        rawOpen,
+      );
+    }
+    t = t.replace(/&amp;lt;br\s*\/?&amp;gt;/gi, "<br>");
+    t = t.replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+    return t;
+  };
+
+  /**
+   * Đọc output AI (text/Markdown hoặc HTML) và render thành HTML để hiển thị trong chat.
+   * - Escape HTML trước để tránh XSS
+   * - Unescape chỉ thẻ an toàn (p, b, strong...) nếu AI output HTML
+   * - Chuyển Markdown (**bold**, headers, bullets) sang HTML
+   * - Linkify URL thành thẻ <a>
+   */
+  const prepareForDisplay = (text) => {
+    if (!text) return "";
+    // AI đôi khi bọc HTML trong backticks `<p>...</p>` hoặc xuất raw HTML. Bỏ backticks quanh thẻ HTML.
+    let t = text
+      .replace(/`\s*(<[a-zA-Z/][^>`]*(?:>[^`]*<\/[a-zA-Z]+>)?)\s*`/g, "$1")
+      .replace(/`(\s*<)/g, "$1")
+      .replace(/(>\s*)`/g, "$1");
+    const escaped = globalEscapeHtml(t);
+    // Nếu AI trả về HTML (<p>, <b>...), unescape các thẻ an toàn để render
+    const unescaped = unescapeAllowedTags(escaped);
+    // Nếu đã có thẻ HTML thì dùng luôn, không qua marked (marked có thể escape lại)
+    const withMarkdown =
+      /<(?:p|b|strong|ul|ol|li|table|thead|tbody|tr|th|td)\b/i.test(unescaped)
+        ? unescaped
+        : markdownToHtml(unescaped);
+    const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
+    const linked = withMarkdown.replace(urlRegex, (m) => {
+      const label = globalEscapeHtml(globalFormatUrlLabel(m));
+      return `<a href="${m}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    });
+    return linked;
+  };
+
+  /**
+   * Gộp xuống dòng trong từng cặp **...** — marked/GFM có thể tách **21.00** thành hai dòng
+   * (in đậm hỏng, còn ** lẻ).
+   */
+  const collapseNewlinesInsideBoldPairs = (text) => {
+    if (!text) return text;
+    let out = "";
+    let i = 0;
+    while (i < text.length) {
+      const open = text.indexOf("**", i);
+      if (open === -1) {
+        out += text.slice(i);
+        break;
+      }
+      out += text.slice(i, open);
+      const close = text.indexOf("**", open + 2);
+      if (close === -1) {
+        out += text.slice(open);
+        break;
+      }
+      let inner = text.slice(open + 2, close);
+      inner = inner
+        .replace(/\s*\n\s*/g, " ")
+        .replace(/[ \t]{2,}/g, " ")
+        .trim();
+      out += "**" + inner + "**";
+      i = close + 2;
+    }
+    return out;
+  };
+
+  const normalizeBotText = (text) => {
+    if (!text) return "";
+    let t = String(text).replace(/\r\n/g, "\n");
+    t = collapseNewlinesInsideBoldPairs(t);
+    // *␠␠␠ mục (GFM) → - mục — giảm xung đột * list với ** bold trong marked
+    t = t.replace(/^(\s*)\*\s{2,}(?=\S)/gm, "$1- ");
+    // **I. …** / **II. …** (La mã) → ### — tách khỏi đoạn trước, marked hiểu heading + list
+    t = t.replace(/\*\*([IVX]{1,4}\.\s+[^*]+)\*\*/g, "\n\n### $1\n\n");
+    // **I. … dính sau chữ (thiếu xuống dòng trước **)
+    t = t.replace(/([^\n#*])\s*(\*\*[IVX]{1,4}\.\s+)/g, "$1\n\n$2");
+    // Chỉ gỡ ":**" lẻ khi ** ngay sau : và xuống dòng / hết — KHÔNG xóa ": **đậm**"
+    t = t.replace(/:\s*\*\*\s*(\n|$)/g, ": $1");
+    t = t.replace(/\*\*\s+(?=[A-ZÀ-ỸĐ])/g, "\n\n");
+    // Dòng kết bằng ** lẻ (thiếu mở đầu) — không đụng **bold** đóng đúng cặp
+    t = t
+      .split("\n")
+      .map((line) => {
+        if (!/\*\*\s*$/.test(line)) return line;
+        const pairs = (line.match(/\*\*/g) || []).length;
+        return pairs % 2 === 1 ? line.replace(/\*\*\s*$/, "").trimEnd() : line;
+      })
+      .join("\n");
+    // List * cùng dòng — CHỈ khi rõ là mở list (tránh tách giữa câu / giờ / sau [n])
+    t = t.replace(/([:;])\s*\*\s+/g, "$1\n* ");
+    // Sau dấu câu chỉ tách khi mục mới bắt đầu chữ HOA (kiểu "… . * Nộp qua…")
+    t = t.replace(/([.!?…])\s+\*\s+(?=[A-ZÀ-ỸĐ])/g, "$1\n* ");
+    // Nhiều mục * trên một dòng: "… * Ba … * Một …" (mục bắt đầu chữ HOA — tránh * 11h30)
+    t = t.replace(/([^\n*#])\s+\*\s+(?=[A-ZÀ-ỸĐ])/g, "$1\n* ");
+    t = t.replace(/\s+###\s+/g, "\n\n### ").replace(/\s+-\s+\*\*/g, "\n- **");
+    // Vá trường hợp markdown bị vỡ theo dòng: "**21.00" + "\nđiểm..."
+    // -> tự đóng ** ở cuối dòng và gộp lại thành "**21.00** điểm..."
+    t = t
+      .split("\n")
+      .map((line) => {
+        const stars = (line.match(/\*\*/g) || []).length;
+        if (stars % 2 === 1) {
+          return line.trimEnd() + "**";
+        }
+        return line;
+      })
+      .join("\n")
+      .replace(
+        /\*\*([0-9]+(?:[.,][0-9]+)?)\*\*\s*\n\s*(điểm\b)/gi,
+        "**$1** $2",
+      );
+    // KHÔNG: \s+-\s+ -> \n- ; KHÔNG: xuống dòng trước [n]
+    return t.replace(/\n{3,}/g, "\n\n").trim();
+  };
+
+  const normalizeIncomingMessageText = (text, role) => {
+    if (!text) return "";
+    let normalized = String(text)
+      .replace(/\r\n/g, "\n")
+      .replace(/\u00A0/g, " ")
+      .replace(/[ \t]+\n/g, "\n");
+    // KHÔNG xóa thụt sau \n với tin bot — GFM cần indent cho list lồng (*   →     *)
+    if (role !== "bot") {
+      normalized = normalized.replace(/\n[ \t]+/g, "\n");
+    }
+    normalized = normalized.replace(/\n{3,}/g, "\n\n").trim();
+    return normalized;
+  };
+
+  const formatBotAnswerHtml = (text) => {
+    if (!text) return "";
+    return prepareForDisplay(normalizeBotText(text));
+  };
+
   const parseSuggestions = (value) => {
     if (!value) return [];
     return value
@@ -64,6 +324,53 @@
   };
 
   const parsedSuggestions = parseSuggestions(scriptEl?.dataset?.suggestions);
+
+  /** marked CDN tải async — await ensureMarked() trước khi render tin bot. */
+  let markedLoadPromise = null;
+  function ensureMarked() {
+    if (typeof marked !== "undefined" && typeof marked.parse === "function") {
+      return Promise.resolve();
+    }
+    if (markedLoadPromise) return markedLoadPromise;
+    markedLoadPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js";
+      s.async = true;
+      s.onload = () => {
+        if (
+          typeof marked !== "undefined" &&
+          typeof marked.parse === "function"
+        ) {
+          resolve();
+        } else {
+          reject(new Error("marked không khả dụng"));
+        }
+      };
+      s.onerror = () => reject(new Error("Không tải được marked"));
+      document.head.appendChild(s);
+    });
+    return markedLoadPromise;
+  }
+
+  /**
+   * Render Markdown sang HTML. Dùng marked nếu có, không thì fallback applySimpleMarkdown.
+   */
+  const markdownToHtml = (escapedStr) => {
+    if (!escapedStr) return "";
+    if (typeof marked !== "undefined" && typeof marked.parse === "function") {
+      try {
+        return marked.parse(escapedStr, {
+          gfm: true,
+          breaks: false,
+          headerIds: false,
+          mangle: false,
+        });
+      } catch (e) {
+        return applySimpleMarkdown(escapedStr);
+      }
+    }
+    return applySimpleMarkdown(escapedStr);
+  };
 
   // Lazy-load Socket.IO client (qua CDN) khi cần
   let socketIoClientPromise = null;
@@ -102,7 +409,7 @@
     const storageKey = "chatbot_session_id";
     let sessionId = localStorage.getItem(storageKey);
     if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       localStorage.setItem(storageKey, sessionId);
     }
     return sessionId;
@@ -110,9 +417,9 @@
 
   // Kiểm tra xem đã nhập thông tin chưa
   const hasUserInfo = () => {
+    const username = localStorage.getItem("chatbot_user_username");
     const phone = localStorage.getItem("chatbot_user_phone");
-    const email = localStorage.getItem("chatbot_user_email");
-    return phone && email;
+    return username && phone;
   };
 
   // Validate số điện thoại VN
@@ -129,10 +436,22 @@
     return emailRegex.test(email);
   };
 
+  // Validate username
+  const validateUsername = (username) => {
+    if (!username || username.trim().length < 2) {
+      return false;
+    }
+    // Username chỉ chứa chữ cái, số, khoảng trắng, dấu gạch ngang và dấu gạch dưới
+    // Tối thiểu 2 ký tự, tối đa 50 ký tự
+    const usernameRegex = /^[a-zA-ZÀ-ỹ0-9\s\-_]{2,50}$/;
+    return usernameRegex.test(username.trim());
+  };
+
   const config = {
     title: scriptEl?.dataset?.title || defaults.title,
     subtitle: scriptEl?.dataset?.subtitle || defaults.subtitle,
     brand: scriptEl?.dataset?.brand || defaults.brand,
+    logoUrl: scriptEl?.dataset?.logoUrl || defaults.logoUrl,
     primaryColor: scriptEl?.dataset?.primaryColor || defaults.primaryColor,
     greeting: scriptEl?.dataset?.greeting || defaults.greeting,
     placeholder: scriptEl?.dataset?.placeholder || defaults.placeholder,
@@ -146,7 +465,13 @@
     faqSuggestionsLimit:
       Number(scriptEl?.dataset?.faqSuggestionsLimit) ||
       defaults.faqSuggestionsLimit,
+    showSuggestions:
+      (scriptEl?.dataset?.showSuggestions || "").toLowerCase() === "true"
+        ? true
+        : defaults.showSuggestions,
     maxWords: Number(scriptEl?.dataset?.maxWords) || defaults.maxWords,
+    launcherImageUrl:
+      scriptEl?.dataset?.launcherImageUrl || defaults.launcherImageUrl,
     socketUrl:
       scriptEl?.dataset?.socketUrl || getApiBaseUrl().replace(/\/api.*/i, ""),
     // Note: [] is truthy in JS, so we must fall back based on length.
@@ -160,6 +485,7 @@
       this.cfg = cfg;
       this.isOpen = false;
       this.historyLoaded = false;
+      this.isFullscreen = true;
       this.userInfoSubmitted = hasUserInfo();
       this.isProcessing = false; // Flag để ngăn spam tin nhắn
       // Pagination cho infinite scroll
@@ -181,26 +507,39 @@
       this.host = document.createElement("div");
       this.host.id = "chatbot-widget-host";
       this.host.setAttribute("aria-live", "polite");
+      // Hạn chế trình dịch (Google Translate, v.v.) tác động vào widget
+      this.host.setAttribute("translate", "no");
+      this.host.classList.add("notranslate");
       this.shadow = this.host.attachShadow({ mode: "open" });
       this.render();
       document.body.appendChild(this.host);
+      ensureMarked().catch(() =>
+        console.warn(
+          "[chat-widget] marked preload thất bại, dùng fallback Markdown",
+        ),
+      );
       // Load danh sách câu hỏi gợi ý từ backend (FAQs) nếu có
-      this.loadFaqSuggestionsFromApi();
+      if (this.cfg.showSuggestions) {
+        this.loadFaqSuggestionsFromApi();
+      }
     }
 
     render() {
       const { cfg } = this;
-      const side = cfg.position === "left" ? "left: 20px;" : "right: 20px;";
+      const side =
+        cfg.position === "left"
+          ? "left: max(20px, env(safe-area-inset-left, 0px));"
+          : "right: max(20px, env(safe-area-inset-right, 0px));";
       const style = `
           :host { all: initial; }
           *, *::before, *::after { box-sizing: border-box; }
 
           .floating {
             position: fixed;
-            bottom: max(16px, env(safe-area-inset-bottom));
+            bottom: max(16px, env(safe-area-inset-bottom, 0px));
             ${side}
-            z-index: ${cfg.zIndex};
-            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            z-index: 2147483000;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
             line-height: 1.3;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -229,57 +568,93 @@
           }
 
           .launcher {
-            width: 58px;
-            height: 58px;
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.22);
-            background: radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.28), transparent 48%),
-                        linear-gradient(135deg, var(--cw-primary), #0ea5e9);
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background:
+              radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.30), transparent 52%),
+              linear-gradient(135deg, #60a5fa, #38bdf8);
             color: #fff;
             display: grid;
+              border: none !important;
+
             place-items: center;
-            box-shadow: 0 14px 40px rgba(2, 6, 23, 0.24);
             cursor: pointer;
             transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
             position: relative;
-            user-select: none;
+            overflow: hidden;
+            box-shadow:
+              0 10px 26px rgba(14, 116, 244, 0.22),
+              0 0 0 0 rgba(56, 189, 248, 0.34);
+            animation: launcherHalo 2.6s ease-in-out infinite;
           }
-          .launcher:hover { transform: translateY(-2px); filter: brightness(1.02); box-shadow: 0 18px 56px rgba(2, 6, 23, 0.28); }
+          @keyframes launcherHalo {
+            0%, 100% {
+              box-shadow:
+                0 10px 26px rgba(14, 116, 244, 0.22),
+                0 0 0 0 rgba(56, 189, 248, 0.34);
+            }
+            50% {
+              box-shadow:
+                0 12px 32px rgba(14, 116, 244, 0.28),
+                0 0 0 12px rgba(56, 189, 248, 0.00);
+            }
+          }
+          .launcher::before {
+            content: "";
+            position: absolute;
+            inset: -2px;
+
+            border-radius: inherit; /* QUAN TRỌNG */
+
+            background:
+              radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.12), transparent 50%),
+              linear-gradient(135deg,rgb(70, 117, 247),rgba(0, 165, 253, 0.67));
+            z-index: 0;
+            pointer-events: none;
+          }
+          .launcher::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background-image: var(--launcher-gif-url, none);
+            background-size: 70% 70%;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+          }
+          .launcher.has-image::before {
+            opacity: 0.2;
+          }
+          .launcher.has-image::after {
+            opacity: 1;
+          }
+          .launcher:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 18px 56px rgba(2, 6, 23, 0.28); }
           .launcher:active { transform: translateY(-1px) scale(0.99); }
           .launcher:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(79,70,229,0.28), 0 18px 56px rgba(2, 6, 23, 0.28); }
           
           @media (max-width: 480px) {
             .launcher {
-              width: 56px;
-              height: 56px;
-              border-radius: 14px;
+              width: 68px;
+              height: 68px;
+              border-radius: 50%;
             }
             .floating {
-              bottom: max(12px, env(safe-area-inset-bottom));
-              ${cfg.position === "left" ? "left: 12px;" : "right: 12px;"}
+              bottom: max(12px, env(safe-area-inset-bottom, 0px));
+              ${cfg.position === "left" ? "left: max(12px, env(safe-area-inset-left, 0px));" : "right: max(12px, env(safe-area-inset-right, 0px));"}
             }
           }
-
-          .dot {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
-            border: 2px solid rgba(255,255,255,0.95);
-            border-radius: 50%;
-            box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
-          }
-          .icon { width: 24px; height: 24px; }
 
           .panel {
             position: absolute;
             bottom: 74px;
             ${cfg.position === "left" ? "left: 0;" : "right: 0;"}
-            width: min(420px, calc(100vw - 32px));
-            max-height: min(650px, calc(100vh - 100px));
-            height: auto;
+            width: min(440px, calc(100vw - 24px));
+            height: min(680px, calc(100vh - 96px));
+            max-height: min(680px, calc(100vh - 96px));
             border-radius: 20px;
             overflow: hidden;
             display: flex;
@@ -294,7 +669,21 @@
             transform: translateY(8px) scale(0.98);
             opacity: 0;
             pointer-events: none;
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+            transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.38s ease,
+              border-radius 0.38s ease;
+          }
+          .panel.fullscreen {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            width: auto;
+            height: auto;
+            max-height: none;
+            border-radius: 18px;
+            z-index: 2147483001;
+            box-sizing: border-box;
           }
           .panel.open {
             transform: translateY(0) scale(1);
@@ -305,16 +694,25 @@
           @media (max-width: 480px) {
             .panel {
               width: calc(100vw - 24px);
-              max-height: calc(100vh - 80px);
-              border-radius: 16px;
-              bottom: 70px;
+              height: min(640px, calc(100vh - 90px));
+              max-height: min(640px, calc(100vh - 90px));
+              border-radius: 14px;
+              bottom: 68px;
+            }
+            .panel.fullscreen {
+              top: 8px;
+              left: 8px;
+              right: 8px;
+              bottom: 8px;
+              border-radius: 12px;
             }
           }
           
           @media (min-width: 768px) {
             .panel {
-              width: min(420px, calc(100vw - 40px));
-              max-height: min(680px, calc(100vh - 90px));
+              width: min(440px, calc(100vw - 24px));
+              height: min(680px, calc(100vh - 96px));
+              max-height: min(680px, calc(100vh - 96px));
             }
           }
 
@@ -322,7 +720,7 @@
             padding: 18px 20px;
             background:
               radial-gradient(140% 120% at 12% 10%, rgba(255,255,255,0.35), transparent 52%),
-              linear-gradient(135deg, var(--cw-primary), #0ea5e9);
+              linear-gradient(135deg, #60a5fa, #38bdf8);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -341,19 +739,22 @@
             width: 40px;
             height: 40px;
             border-radius: 14px;
-            background: rgba(255,255,255,0.22);
-            border: 1px solid rgba(255,255,255,0.28);
+            background: #ffffff;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 2px 6px rgba(15,23,42,0.25);
             display: grid;
             place-items: center;
-            font-weight: 800;
-            font-size: 15px;
-            letter-spacing: 0.5px;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            overflow: hidden;
+          }
+          .brand .avatar img {
+            width: 90%;
+            height: 90%;
+            object-fit: contain;
+            display: block;
           }
           .brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; gap: 2px; }
-          .brand-text .title { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
-          .brand-text .subtitle { font-size: 12px; opacity: 0.95; display: flex; align-items: center; gap: 6px; font-weight: 500; }
+          .brand-text .title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
+          .brand-text .subtitle { font-size: 1rem; opacity: 0.95; display: flex; align-items: center; gap: 6px; font-weight: 500; }
           .brand-text .subtitle::before {
             content: "";
             width: 7px;
@@ -368,6 +769,12 @@
             50% { opacity: 0.8; transform: scale(1.1); }
           }
 
+          .header-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+          }
+
           .close-btn {
             background: rgba(255,255,255,0.16);
             border: 1px solid rgba(255,255,255,0.18);
@@ -379,10 +786,31 @@
             display: grid;
             place-items: center;
             transition: background 0.18s ease, transform 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+            font-size: 18px;
+            line-height: 1;
           }
           .close-btn:hover { background: rgba(255,255,255,0.26); transform: translateY(-1px); }
           .close-btn:active { transform: translateY(0); }
           .close-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255,255,255,0.22); }
+
+          .size-btn {
+            background: rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.18);
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            color: #fff;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background 0.18s ease, transform 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+          }
+          .size-btn:hover { background: rgba(255,255,255,0.26); transform: translateY(-1px); }
+          .size-btn:active { transform: translateY(0); }
+          .size-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255,255,255,0.22); }
+          .size-btn svg { width: 18px; height: 18px; }
 
           .body {
             display: flex;
@@ -399,6 +827,7 @@
             flex: 1;
             padding: 20px 18px 16px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             gap: 12px;
             display: flex;
             flex-direction: column;
@@ -426,9 +855,8 @@
             max-width: 85%;
             padding: 12px 16px;
             border-radius: 16px;
-            font-size: 14.5px;
+            font-size: 1.1rem;
             line-height: 1.5;
-            white-space: pre-wrap;
             word-wrap: break-word;
             word-break: break-word;
             border: none;
@@ -502,6 +930,113 @@
             background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(79,70,229,0.08));
             color: var(--cw-text);
             border: 1px solid rgba(79,70,229,0.15);
+          }
+
+          /* Cải thiện hiển thị đoạn văn & danh sách trong bubble bot */
+          .msg.bot p {
+            margin: 0;
+          }
+          .msg.bot > * + * {
+            margin-top: 6px;
+          }
+          .msg.bot p:last-child {
+            margin-bottom: 0;
+          }
+          .msg.bot ol.cw-ordered-list {
+            /* Giảm thụt lề bên trái cho gọn hơn */
+            margin: 6px 0;
+            padding-left: 1.4rem;
+            list-style-position: outside;
+          }
+          .msg.bot ol.cw-ordered-list li {
+            margin-bottom: 4px;
+            line-height: 1.5;
+          }
+          .msg.bot ol.cw-ordered-list li:last-child {
+            margin-bottom: 0;
+          }
+          .msg.bot ul.cw-bullet-list {
+            margin: 6px 0;
+            padding-left: 1.4rem;
+            list-style-position: outside;
+          }
+          .msg.bot ul.cw-bullet-list li {
+            margin-bottom: 4px;
+            line-height: 1.5;
+          }
+          .msg.bot ul.cw-bullet-list li:last-child {
+            margin-bottom: 0;
+          }
+          /* marked tạo ul/ol không class; list lồng (GFM) */
+          .msg.bot ul,
+          .msg.bot ol {
+            margin: 6px 0;
+            padding-left: 1.35rem;
+            list-style-position: outside;
+          }
+          .msg.bot ul ul,
+          .msg.bot ol ol,
+          .msg.bot li > ul,
+          .msg.bot li > ol {
+            margin: 4px 0 0;
+          }
+          .msg.bot ul li,
+          .msg.bot ol li {
+            margin-bottom: 4px;
+            line-height: 1.55;
+          }
+          .msg.bot h1,
+          .msg.bot h2,
+          .msg.bot h3 {
+            margin: 0.75em 0 0.35em;
+            font-size: 1.06em;
+            font-weight: 700;
+            line-height: 1.35;
+          }
+          .msg.bot h1:first-child,
+          .msg.bot h2:first-child,
+          .msg.bot h3:first-child {
+            margin-top: 0;
+          }
+
+          /* Table styling (Markdown tables / AI output) */
+          .msg.bot table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 13.5px;
+            line-height: 1.35;
+            overflow-x: auto;
+            display: block;
+            -webkit-overflow-scrolling: touch;
+          }
+          .msg.bot thead { position: sticky; top: 0; }
+          .msg.bot th,
+          .msg.bot td {
+            border: 1px solid rgba(148,163,184,0.35);
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+            white-space: nowrap;
+          }
+          .msg.bot th {
+            background: rgba(79,70,229,0.10);
+            font-weight: 700;
+          }
+          .msg.bot tbody tr:nth-child(even) td {
+            background: rgba(148,163,184,0.06);
+          }
+          @media (prefers-color-scheme: dark) {
+            .msg.bot th,
+            .msg.bot td {
+              border-color: rgba(148,163,184,0.22);
+            }
+            .msg.bot th {
+              background: rgba(79,70,229,0.18);
+            }
+            .msg.bot tbody tr:nth-child(even) td {
+              background: rgba(148,163,184,0.08);
+            }
           }
           .msg.user {
             align-self: flex-end;
@@ -617,6 +1152,7 @@
           }
 
           .chip {
+            -webkit-appearance: none;
             appearance: none;
             border: 1.5px solid rgba(79,70,229,0.2);
             background: rgba(255,255,255,0.9);
@@ -664,6 +1200,7 @@
           }
           .chip:active { transform: translateY(0); }
           .chip:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(79,70,229,0.2); }
+          .chip { -webkit-tap-highlight-color: transparent; }
           .chip:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -726,12 +1263,14 @@
             transition: all 0.2s ease;
             font-family: inherit;
             overflow-y: auto;
+            -webkit-appearance: none;
+            appearance: none;
           }
           
           @media (max-width: 480px) {
             .composer textarea {
               padding: 10px 14px;
-              font-size: 14px;
+              font-size: 16px;
               min-height: 44px;
               border-radius: 14px;
             }
@@ -781,7 +1320,9 @@
             height: 48px;
             border-radius: 16px;
             border: none;
-            background: linear-gradient(135deg, var(--cw-primary), #0ea5e9);
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(135deg, #60a5fa, #38bdf8);
             color: #fff;
             cursor: pointer;
             display: grid;
@@ -791,6 +1332,7 @@
             transition: all 0.2s ease;
             box-shadow: 0 4px 12px rgba(79,70,229,0.25);
             flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
           }
           .send-btn:disabled { 
             opacity: 0.5; 
@@ -910,6 +1452,8 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
             box-sizing: border-box;
+            -webkit-appearance: none;
+            appearance: none;
           }
           
           @media (prefers-color-scheme: dark) {
@@ -1020,6 +1564,7 @@
             cursor: not-allowed;
             transform: none;
           }
+          .form-submit { -webkit-tap-highlight-color: transparent; }
           
           @media (max-width: 480px) {
             .user-info-form-container {
@@ -1045,28 +1590,42 @@
             }
             .form-input {
               padding: 11px 14px;
-              font-size: 14px;
+              font-size: 16px;
             }
             .form-submit {
               padding: 13px;
               font-size: 14.5px;
             }
           }
+          
+          @media (hover: none) and (pointer: coarse) {
+            .composer textarea { font-size: 16px; }
+          }
         `;
 
       this.shadow.innerHTML = `
           <style>${style}</style>
-          <div class="floating">
-            <div class="panel">
+          <div class="floating notranslate" translate="no" lang="vi">
+            <div class="panel fullscreen">
               <div class="header">
                 <div class="brand">
-                  <div class="avatar">${cfg.brand.slice(0, 2).toUpperCase()}</div>
+                  <div class="avatar"></div>
                   <div class="brand-text">
                     <span class="title">${cfg.title}</span>
                     <span class="subtitle">${cfg.subtitle}</span>
                   </div>
                 </div>
-                <button class="close-btn" aria-label="Đóng">×</button>
+                <div class="header-actions">
+                  <button class="size-btn" aria-label="Thu nhỏ khung chat" title="Thu nhỏ khung chat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 3H3v5"/>
+                      <path d="M16 3h5v5"/>
+                      <path d="M21 16v5h-5"/>
+                      <path d="M3 16v5h5"/>
+                    </svg>
+                  </button>
+                  <button class="close-btn" aria-label="Đóng">×</button>
+                </div>
               </div>
               <div class="body">
                 ${
@@ -1087,6 +1646,18 @@
                     </div>
                     <form id="user-info-form">
                       <div class="form-group">
+                        <label class="form-label" for="user-username">Tên người dùng</label>
+                        <input 
+                          type="text" 
+                          id="user-username" 
+                          class="form-input" 
+                          placeholder="Nhập tên của bạn"
+                          required
+                          autocomplete="username"
+                        />
+                        <div class="form-error" id="username-error">Vui lòng nhập tên người dùng (tối thiểu 2 ký tự)</div>
+                      </div>
+                      <div class="form-group">
                         <label class="form-label" for="user-phone">Số điện thoại</label>
                         <input 
                           type="tel" 
@@ -1099,16 +1670,15 @@
                         <div class="form-error" id="phone-error">Vui lòng nhập số điện thoại hợp lệ (10 số, bắt đầu bằng 0 hoặc +84)</div>
                       </div>
                       <div class="form-group">
-                        <label class="form-label" for="user-email">Email</label>
+                        <label class="form-label" for="user-email">Email (không bắt buộc)</label>
                         <input 
                           type="email" 
                           id="user-email" 
                           class="form-input" 
-                          placeholder="example@email.com"
-                          required
+                          placeholder="Bạn có thể bỏ trống nếu không có"
                           autocomplete="email"
                         />
-                        <div class="form-error" id="email-error">Vui lòng nhập email hợp lệ</div>
+                        <div class="form-error" id="email-error">Vui lòng nhập email hợp lệ nếu bạn cung cấp</div>
                       </div>
                       <button type="submit" class="form-submit">Bắt đầu</button>
                     </form>
@@ -1117,6 +1687,9 @@
                 `
                     : `
                 <div class="messages"></div>
+                ${
+                  this.cfg.showSuggestions
+                    ? `
                 <div class="suggestions-header">
                   <span class="suggestions-title">Câu hỏi gợi ý</span>
                   <button class="suggestions-toggle" aria-label="Ẩn/Hiện câu hỏi gợi ý">
@@ -1127,6 +1700,9 @@
                   </button>
                 </div>
                 <div class="suggestions"></div>
+                `
+                    : ""
+                }
                 <div class="composer">
                   <textarea rows="1" placeholder="${cfg.placeholder}" aria-label="Nhập tin nhắn"></textarea>
                   <button class="send-btn" aria-label="Gửi">➤</button>
@@ -1135,22 +1711,20 @@
                 }
               </div>
             </div>
-            <button class="launcher" aria-label="Mở chatbot">
-              <div class="dot" title="Trực tuyến"></div>
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 5h16c.6 0 1 .4 1 1v9c0 .6-.4 1-1 1H7l-4 4V6c0-.6.4-1 1-1Z"/>
-                <path d="M8 11h8"/>
-                <path d="M8 8h10"/>
-              </svg>
-            </button>
+            <button class="launcher" aria-label="Mở chatbot"></button>
           </div>
         `;
 
       this.cacheDom();
+      this.applyLauncherBackground();
+      this.initAvatar();
       this.bindEvents();
+      this.updateSizeButtonIcon();
       if (this.userInfoSubmitted) {
         this.seedInitialMessages();
-        this.renderSuggestions();
+        if (this.cfg.showSuggestions) {
+          this.renderSuggestions();
+        }
       } else {
         this.bindFormEvents();
       }
@@ -1160,13 +1734,16 @@
       const s = this.shadow;
       this.userInfoFormContainer = s.querySelector(".user-info-form-container");
       this.userInfoForm = s.querySelector("#user-info-form");
+      this.usernameInput = s.querySelector("#user-username");
       this.phoneInput = s.querySelector("#user-phone");
       this.emailInput = s.querySelector("#user-email");
+      this.usernameError = s.querySelector("#username-error");
       this.phoneError = s.querySelector("#phone-error");
       this.emailError = s.querySelector("#email-error");
       this.panel = s.querySelector(".panel");
       this.launcher = s.querySelector(".launcher");
       this.closeBtn = s.querySelector(".close-btn");
+      this.sizeBtn = s.querySelector(".size-btn");
       this.messagesEl = s.querySelector(".messages");
       this.suggestionsEl = s.querySelector(".suggestions");
       this.suggestionsHeader = s.querySelector(".suggestions-header");
@@ -1176,12 +1753,96 @@
       this.sendBtn = s.querySelector(".send-btn");
       this.suggestionsCollapsed = false;
       this.lengthWarning = null;
+      this.avatarEl = s.querySelector(".avatar");
+    }
+
+    initAvatar() {
+      if (!this.avatarEl) return;
+      const avatar = this.avatarEl;
+      avatar.innerHTML = "";
+
+      const brandText =
+        (this.cfg.brand && this.cfg.brand.slice(0, 2).toUpperCase()) || "AI";
+
+      let logoUrl = this.cfg.logoUrl;
+      // Nếu logoUrl là đường dẫn tương đối (không bắt đầu bằng http/https),
+      // tự động build absolute URL dựa trên origin của script để dùng tốt khi nhúng cross-domain.
+      if (logoUrl && !/^https?:\/\//i.test(logoUrl)) {
+        try {
+          const scriptSrc = scriptEl && scriptEl.src;
+          const baseOrigin = scriptSrc
+            ? new URL(scriptSrc).origin
+            : window.location.origin;
+          logoUrl =
+            baseOrigin.replace(/\/+$/, "") + "/" + logoUrl.replace(/^\/+/, "");
+        } catch (e) {
+          // Nếu có lỗi khi parse URL thì giữ nguyên logoUrl
+        }
+      }
+
+      if (logoUrl) {
+        const img = document.createElement("img");
+        img.src = logoUrl;
+        img.alt = this.cfg.brand || "Chatbot logo";
+        img.onerror = () => {
+          avatar.textContent = brandText;
+        };
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = brandText;
+      }
+    }
+
+    applyLauncherBackground() {
+      if (!this.launcher) return;
+      const rawUrl = this.cfg.launcherImageUrl;
+      if (!rawUrl) return;
+
+      let launcherUrl = rawUrl;
+      if (rawUrl && !/^https?:\/\//i.test(rawUrl)) {
+        try {
+          const scriptSrc = scriptEl && scriptEl.src;
+          const baseOrigin = scriptSrc
+            ? new URL(scriptSrc).origin
+            : window.location.origin;
+          launcherUrl =
+            baseOrigin.replace(/\/+$/, "") + "/" + rawUrl.replace(/^\/+/, "");
+        } catch (e) {
+          // Nếu parse URL lỗi thì dùng nguyên rawUrl
+        }
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        this.launcher.style.setProperty(
+          "--launcher-gif-url",
+          `url("${launcherUrl}")`,
+        );
+        this.launcher.classList.add("has-image");
+      };
+      img.onerror = () => {
+        console.warn("[chat-widget] Không tải được ảnh launcher:", launcherUrl);
+        this.launcher.style.removeProperty("--launcher-gif-url");
+        this.launcher.classList.remove("has-image");
+      };
+      img.src = launcherUrl;
     }
 
     bindFormEvents() {
       if (!this.userInfoForm) return;
 
       // Real-time validation
+      if (this.usernameInput) {
+        this.usernameInput.addEventListener("blur", () =>
+          this.validateUsername(),
+        );
+        this.usernameInput.addEventListener("input", () => {
+          if (this.usernameInput.classList.contains("error")) {
+            this.validateUsername();
+          }
+        });
+      }
+
       if (this.phoneInput) {
         this.phoneInput.addEventListener("blur", () => this.validatePhone());
         this.phoneInput.addEventListener("input", () => {
@@ -1203,6 +1864,7 @@
       // Form submit
       this.userInfoForm.addEventListener("submit", (e) => {
         e.preventDefault();
+
         this.submitUserInfo();
       });
     }
@@ -1281,27 +1943,44 @@
       }
     }
 
+    validateUsername() {
+      const username = this.usernameInput.value.trim();
+      const isValid = validateUsername(username);
+
+      if (!isValid && username) {
+        this.usernameInput.classList.add("error");
+        this.usernameError.classList.add("show");
+        return false;
+      } else {
+        this.usernameInput.classList.remove("error");
+        this.usernameError.classList.remove("show");
+        return true;
+      }
+    }
+
     async submitUserInfo() {
+      const username = this.usernameInput.value.trim();
       const phone = this.phoneInput.value.trim();
       const email = this.emailInput.value.trim();
 
       // Validate
+      const usernameValid = this.validateUsername();
       const phoneValid = this.validatePhone();
       const emailValid = this.validateEmail();
 
-      if (!phone || !email) {
+      if (!username || !phone) {
+        if (!username) {
+          this.usernameInput.classList.add("error");
+          this.usernameError.classList.add("show");
+        }
         if (!phone) {
           this.phoneInput.classList.add("error");
           this.phoneError.classList.add("show");
         }
-        if (!email) {
-          this.emailInput.classList.add("error");
-          this.emailError.classList.add("show");
-        }
         return;
       }
 
-      if (!phoneValid || !emailValid) {
+      if (!usernameValid || !phoneValid || (email && !emailValid)) {
         return;
       }
 
@@ -1322,8 +2001,9 @@
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
+                username: username,
                 sdt: phone,
-                email: email,
+                email: email || null,
                 session_id: this.cfg.sessionId,
                 specialized: null, // Có thể thêm sau nếu cần
               }),
@@ -1347,6 +2027,7 @@
         }
 
         // Lưu vào localStorage làm backup (ngay cả khi API thành công)
+        localStorage.setItem("chatbot_user_username", username);
         localStorage.setItem("chatbot_user_phone", phone);
         localStorage.setItem("chatbot_user_email", email);
         if (contactId) {
@@ -1363,6 +2044,9 @@
         const body = this.shadow.querySelector(".body");
         body.innerHTML = `
             <div class="messages"></div>
+            ${
+              this.cfg.showSuggestions
+                ? `
             <div class="suggestions-header">
               <span class="suggestions-title">Câu hỏi gợi ý</span>
               <button class="suggestions-toggle" aria-label="Ẩn/Hiện câu hỏi gợi ý">
@@ -1373,6 +2057,9 @@
               </button>
             </div>
             <div class="suggestions"></div>
+            `
+                : ""
+            }
             <div class="composer">
               <textarea rows="1" placeholder="${this.cfg.placeholder}" aria-label="Nhập tin nhắn"></textarea>
               <button class="send-btn" aria-label="Gửi">➤</button>
@@ -1382,10 +2069,13 @@
         // Re-cache DOM
         this.cacheDom();
         this.bindEvents();
+        this.updateSizeButtonIcon();
 
         // Seed messages và suggestions
         this.seedInitialMessages();
-        this.renderSuggestions();
+        if (this.cfg.showSuggestions) {
+          this.renderSuggestions();
+        }
 
         // Load history
         if (!this.historyLoaded) {
@@ -1411,6 +2101,9 @@
       }
       if (this.closeBtn) {
         this.closeBtn.addEventListener("click", () => this.toggle(false));
+      }
+      if (this.sizeBtn) {
+        this.sizeBtn.addEventListener("click", () => this.toggleCompactMode());
       }
       if (this.sendBtn) {
         this.sendBtn.addEventListener("click", () => this.sendMessage());
@@ -1472,6 +2165,78 @@
       }
     }
 
+    updateSizeButtonIcon() {
+      if (!this.sizeBtn) return;
+      this.sizeBtn.innerHTML = this.isFullscreen
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H3v6"/><path d="M15 3h6v6"/><path d="M21 15v6h-6"/><path d="M3 15v6h6"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>`;
+      this.sizeBtn.setAttribute(
+        "aria-label",
+        this.isFullscreen ? "Thu nhỏ khung chat" : "Mở rộng toàn màn hình",
+      );
+      this.sizeBtn.setAttribute(
+        "title",
+        this.isFullscreen ? "Thu nhỏ" : "Toàn màn hình",
+      );
+    }
+
+    toggleCompactMode() {
+      if (!this.panel) return;
+      const panel = this.panel;
+
+      // FLIP animation: thay đổi fullscreen/compact "zoom" mượt hơn.
+      // Duration dài hơn + easing "smooth" để bớt cảm giác đột ngột.
+      const durationMs = 440;
+      const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+      const startRect = panel.getBoundingClientRect();
+
+      this.isFullscreen = !this.isFullscreen;
+      panel.classList.toggle("fullscreen", this.isFullscreen);
+      this.updateSizeButtonIcon();
+
+      const endRect = panel.getBoundingClientRect();
+
+      const startW = Math.max(1, startRect.width);
+      const startH = Math.max(1, startRect.height);
+      const endW = Math.max(1, endRect.width);
+      const endH = Math.max(1, endRect.height);
+
+      const deltaX = startRect.left - endRect.left;
+      const deltaY = startRect.top - endRect.top;
+      const scaleX = startW / endW;
+      const scaleY = startH / endH;
+
+      const origin =
+        this.cfg.position === "left" ? "left bottom" : "right bottom";
+
+      panel.style.willChange = "transform, opacity";
+      panel.style.transition = "none";
+      panel.style.transformOrigin = origin;
+
+      // Set trạng thái inverted trước (để transform animate về state thật).
+      panel.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`;
+
+      // Force layout để trình duyệt áp dụng transform trước khi bật transition.
+      panel.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        panel.style.transition = `transform ${durationMs}ms ${easing}, opacity ${durationMs}ms ${easing}, border-radius ${durationMs}ms ${easing}`;
+        panel.style.transform = "";
+      });
+
+      if (this.messagesEl)
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+
+      // Cleanup inline style sau khi animate xong.
+      setTimeout(() => {
+        panel.style.transition = "";
+        panel.style.willChange = "";
+        panel.style.transformOrigin = "";
+        panel.style.transform = "";
+      }, durationMs + 70);
+    }
+
     toggle(forceOpen) {
       if (!this.panel) return;
 
@@ -1480,8 +2245,8 @@
       if (next) {
         this.panel.classList.add("open");
         // Focus vào input phù hợp
-        if (!this.userInfoSubmitted && this.phoneInput) {
-          this.phoneInput.focus();
+        if (!this.userInfoSubmitted && this.usernameInput) {
+          this.usernameInput.focus();
         } else if (this.textarea) {
           this.textarea.focus();
         }
@@ -1542,9 +2307,14 @@
         const ioClient = await loadSocketIoClient();
         const baseUrl =
           this.cfg.socketUrl || this.cfg.apiBaseUrl.replace(/\/api.*/i, "");
+        // Quan trọng: khi chạy nhiều worker (Gunicorn), chế độ polling của Socket.IO
+        // không tương thích nếu không có sticky session. Để socket hoạt động ổn định
+        // với nhiều worker, ta buộc client chỉ dùng WebSocket.
         this.socket = ioClient(baseUrl, {
           path: "/socket.io",
           transports: ["websocket"],
+          // Ghi nhớ kết nối WebSocket đã nâng cấp để những lần sau kết nối nhanh hơn
+          rememberUpgrade: true,
           query: { contact_id: contactId },
         });
 
@@ -1574,7 +2344,7 @@
           // Ẩn remote typing indicator nếu có
           this.hideRemoteTyping();
           // Tin nhắn từ nhân viên hiển thị như bot
-          this.addMessage(payload.content, "bot");
+          void this.addMessage(payload.content, "bot");
           if (this.messagesEl) {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
           }
@@ -1783,10 +2553,10 @@
         // Sắp xếp theo ID tăng dần để hiển thị theo thời gian
         newMessages.sort((a, b) => a.id - b.id);
 
-        newMessages.forEach((msg) => {
+        for (const msg of newMessages) {
           const role = msg.role === "user" ? "user" : "bot";
-          this.addMessage(msg.content, role);
-        });
+          await this.addMessage(msg.content, role);
+        }
 
         if (this.messagesEl) {
           this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
@@ -1848,12 +2618,10 @@
               const reversedMessages = [...messages].reverse();
 
               // Render lại toàn bộ lịch sử chat (từ cũ đến mới)
-              reversedMessages.forEach((msg) => {
-                // role='user' -> hiển thị bên phải (user)
-                // role='bot' hoặc 'customer' (nhân viên) -> hiển thị bên trái (bot)
+              for (const msg of reversedMessages) {
                 const role = msg.role === "user" ? "user" : "bot";
-                this.addMessage(msg.content, role);
-              });
+                await this.addMessage(msg.content, role);
+              }
 
               // Scroll xuống cuối (tin nhắn mới nhất)
               this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
@@ -1938,12 +2706,10 @@
               const reversedMessages = [...messages].reverse();
 
               // Thêm messages cũ hơn vào đầu danh sách
-              reversedMessages.forEach((msg) => {
-                // role='user' -> hiển thị bên phải (user)
-                // role='bot' hoặc 'customer' (nhân viên) -> hiển thị bên trái (bot)
+              for (const msg of reversedMessages) {
                 const role = msg.role === "user" ? "user" : "bot";
-                this.addMessageToTop(msg.content, role);
-              });
+                await this.addMessageToTop(msg.content, role);
+              }
 
               // Giữ scroll position (scroll xuống một khoảng bằng chiều cao messages mới thêm)
               const newScrollHeight = this.messagesEl.scrollHeight;
@@ -1976,44 +2742,24 @@
       }
     }
 
-    addMessageToTop(text, role) {
+    async addMessageToTop(text, role) {
       if (!this.messagesEl) return;
 
       const msg = document.createElement("div");
       msg.className = `msg ${role}`;
-      const escapeHtml = (s) =>
-        String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
-          .replace(/'/g, "&#39;");
 
-      const formatUrlLabel = (rawUrl) => {
+      const normalizedText = normalizeIncomingMessageText(text, role);
+      if (role === "bot") {
         try {
-          const u = new URL(rawUrl);
-          const host = u.host;
-          const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
-          const shortPath = path.length > 28 ? `${path.slice(0, 28)}…` : path;
-          return `${host}${shortPath}`;
+          await ensureMarked();
         } catch (e) {
-          return rawUrl;
+          console.warn("[chat-widget] ensureMarked (top):", e);
         }
-      };
+        msg.innerHTML = formatBotAnswerHtml(normalizedText);
+      } else {
+        msg.innerHTML = highlightLinksOnly(normalizedText);
+      }
 
-      // Linkify URL để người dùng click được (mở tab mới)
-      const linkify = (s) => {
-        const escaped = escapeHtml(s);
-        const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
-        return escaped.replace(urlRegex, (m) => {
-          const href = m;
-          const label = escapeHtml(formatUrlLabel(m));
-          return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-        });
-      };
-
-      msg.innerHTML = linkify(text);
-      // Thêm vào đầu danh sách (insertBefore với firstChild)
       this.messagesEl.insertBefore(msg, this.messagesEl.firstChild);
     }
 
@@ -2142,6 +2888,8 @@
           }),
         });
 
+        console.log("response1 = ", response);
+
         if (response.ok) {
           const data = await response.json();
           if (data.status === "success") {
@@ -2162,7 +2910,7 @@
 
     seedInitialMessages() {
       if (this.messagesEl) {
-        this.addMessage(this.cfg.greeting, "bot");
+        void this.addMessage(this.cfg.greeting, "bot");
       }
     }
 
@@ -2229,43 +2977,24 @@
       }
     }
 
-    addMessage(text, role) {
+    async addMessage(text, role) {
       if (!this.messagesEl) return;
 
       const msg = document.createElement("div");
       msg.className = `msg ${role}`;
-      const escapeHtml = (s) =>
-        String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
-          .replace(/'/g, "&#39;");
 
-      const formatUrlLabel = (rawUrl) => {
+      const normalizedText = normalizeIncomingMessageText(text, role);
+      if (role === "bot") {
         try {
-          const u = new URL(rawUrl);
-          const host = u.host;
-          const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
-          const shortPath = path.length > 28 ? `${path.slice(0, 28)}…` : path;
-          return `${host}${shortPath}`;
+          await ensureMarked();
         } catch (e) {
-          return rawUrl;
+          console.warn("[chat-widget] ensureMarked:", e);
         }
-      };
+        msg.innerHTML = formatBotAnswerHtml(normalizedText);
+      } else {
+        msg.innerHTML = highlightLinksOnly(normalizedText);
+      }
 
-      // Linkify URL để người dùng click được (mở tab mới)
-      const linkify = (s) => {
-        const escaped = escapeHtml(s);
-        const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
-        return escaped.replace(urlRegex, (m) => {
-          const href = m;
-          const label = escapeHtml(formatUrlLabel(m));
-          return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-        });
-      };
-
-      msg.innerHTML = linkify(text);
       this.messagesEl.appendChild(msg);
       this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
@@ -2312,25 +3041,29 @@
         });
       }
 
-      // Hiển thị message của user
-      this.addMessage(value, "user");
+      await this.addMessage(value, "user");
 
-      // CLEAR INPUT NGAY LẬP TỨC để tạo cảm giác mượt mà
+      // Lưu user message vào database
+      const saveResult = await this.saveMessageToAPI(value, "user");
+
+      // Cập nhật lastMessageId sau khi lưu message thành công
+      if (saveResult && saveResult.id) {
+        this.lastMessageId = saveResult.id;
+      } else {
+        // Nếu không có ID từ response, fetch lại để cập nhật
+        await this.updateLastMessageIdFromHistory();
+      }
+
+      // Clear input (không focus vì đã disabled)
       this.textarea.value = "";
       this.textarea.style.height = "auto";
 
-      // SHOW TYPING INDICATOR NGAY LẬP TỨC
       // Hiển thị typing indicator với thông điệp động chuyên nghiệp
       const loading = document.createElement("div");
       loading.className = "msg bot typing-indicator";
 
       // Danh sách thông điệp xoay vòng
-      const thinkingMessages = [
-        "Đang suy nghĩ",
-        "Đang tìm kiếm thông tin",
-        "Đang xử lý câu hỏi",
-        "Đang phân tích",
-      ];
+      const thinkingMessages = ["Đang soạn tin..."];
 
       let currentMessageIndex = 0;
       const updateThinkingMessage = () => {
@@ -2366,19 +3099,6 @@
       loading._thinkingInterval = thinkingInterval;
 
       try {
-        console.log("[Widget] Saving user message...");
-        // Lưu user message vào database
-        const saveResult = await this.saveMessageToAPI(value, "user");
-
-        // Cập nhật lastMessageId sau khi lưu message thành công
-        if (saveResult && saveResult.id) {
-          this.lastMessageId = saveResult.id;
-        } else {
-          // Nếu không có ID từ response, fetch lại để cập nhật
-          await this.updateLastMessageIdFromHistory();
-        }
-
-        console.log("[Widget] User message saved. Starting stream...");
         // Sử dụng streaming API để render từng token (giống ChatGPT)
         await this.sendMessageToAPIStream(value, loading);
       } catch (error) {
@@ -2392,7 +3112,10 @@
         loading.remove();
 
         // Hiển thị error message
-        this.addMessage("Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại sau.", "bot");
+        await this.addMessage(
+          "Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại sau.",
+          "bot",
+        );
       } finally {
         // Re-enable UI sau khi hoàn thành (thành công hoặc lỗi)
         this.isProcessing = false;
@@ -2433,6 +3156,12 @@
       }
 
       try {
+        try {
+          await ensureMarked();
+        } catch (e) {
+          console.warn("[chat-widget] ensureMarked (stream):", e);
+        }
+
         const response = await fetch(
           `${this.cfg.apiBaseUrl}/public/faqs/search/stream`,
           {
@@ -2452,38 +3181,6 @@
         const decoder = new TextDecoder();
         let buffer = "";
         let fullText = "";
-
-        // Escape HTML helper
-        const escapeHtml = (s) =>
-          String(s)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-
-        // Linkify URL helper
-        const formatUrlLabel = (rawUrl) => {
-          try {
-            const u = new URL(rawUrl);
-            const host = u.host;
-            const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
-            const shortPath = path.length > 28 ? `${path.slice(0, 28)}…` : path;
-            return `${host}${shortPath}`;
-          } catch (e) {
-            return rawUrl;
-          }
-        };
-
-        const linkify = (s) => {
-          const escaped = escapeHtml(s);
-          const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
-          return escaped.replace(urlRegex, (m) => {
-            const href = m;
-            const label = escapeHtml(formatUrlLabel(m));
-            return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-          });
-        };
 
         while (true) {
           const { done, value } = await reader.read();
@@ -2510,7 +3207,8 @@
                     }
                     botMessage.classList.remove("typing-indicator");
                   }
-                  botMessage.innerHTML = linkify(fullText);
+                  // Áp dụng format đẹp cho câu trả lời bot (markdown, bullets, references)
+                  botMessage.innerHTML = formatBotAnswerHtml(fullText);
                   // Auto scroll
                   this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
                 } else if (data.type === "done") {

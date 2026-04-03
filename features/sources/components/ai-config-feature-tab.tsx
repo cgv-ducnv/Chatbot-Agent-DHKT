@@ -3,9 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
   IconMessageChatbot,
-  IconHelp,
   IconCode,
-  IconMessage,
   IconQuestionMark,
   IconSourceCode,
 } from "@tabler/icons-react";
@@ -30,32 +28,16 @@ export const AI_CONFIG_FEATURES = [
     bgColor: "bg-teal-100 dark:bg-teal-900/20",
   },
   {
-    id: "documents",
-    title: "Xử lý tài liệu",
-    description: "Xử lý tài liệu với Light RAG",
-    icon: IconHelp,
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-100 dark:bg-green-900/20",
-  },
-  {
     id: "chat",
-    title: "Chat với chatbot",
-    description: "Trò chuyện trực tiếp với AI Agent",
+    title: "Chat với trợ lý ảo",
+    description: "Tải script widget; rời tab thì ẩn bubble (CSS)",
     icon: IconMessageChatbot,
     color: "text-purple-600 dark:text-purple-400",
     bgColor: "bg-purple-100 dark:bg-purple-900/20",
   },
   {
-    id: "conversations",
-    title: "Lịch sử chat",
-    description: "Xem lại các cuộc hội thoại trước đây",
-    icon: IconMessage,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/20",
-  },
-  {
     id: "integration",
-    title: "Source Code",
+    title: "Mã nguồn tích hợp",
     description: "Tích hợp API vào ứng dụng",
     icon: IconCode,
     color: "text-pink-600 dark:text-pink-400",
@@ -75,7 +57,7 @@ export function AIConfigFeatureTab({
   return (
     <div className="space-y-4 h-full">
       <h2 className="text-lg font-semibold">Tính năng</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {AI_CONFIG_FEATURES.map((feature, index) => (
           <motion.div
             key={feature.id}

@@ -39,10 +39,15 @@ import {
   DocumentsDashboardContent,
   useDocumentsDashboardController,
 } from "@/features/documents/components/documents-dashboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShieldX } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { Spinner } from "@/components/ui/spinner";
+import { CodeBlockWidgetChat } from "@/features/source-code-ai-config/code-block-widget-chat";
+import {
+  ChatWithBotWidget,
+  CW_AI_CONFIG_CHAT_TAB_BODY_CLASS,
+} from "@/features/chat-with-bot-ai-config/chat-with-bot-widget";
 
 // Sort options for FAQs
 const faqsSortOptions: FilterOption[] = [
@@ -155,6 +160,19 @@ export default function AIConfigDetailPage() {
   // State for feature tabs
   const [activeFeature, setActiveFeature] = useState<string | null>("source");
 
+  /** Ẩn bubble widget ngay khi đổi tab (không chờ AnimatePresence unmount ChatWithBotWidget). */
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (activeFeature === "chat") {
+      document.body.classList.add(CW_AI_CONFIG_CHAT_TAB_BODY_CLASS);
+    } else {
+      document.body.classList.remove(CW_AI_CONFIG_CHAT_TAB_BODY_CLASS);
+    }
+    return () => {
+      document.body.classList.remove(CW_AI_CONFIG_CHAT_TAB_BODY_CLASS);
+    };
+  }, [activeFeature]);
+
   const documentsController = useDocumentsDashboardController({
     paramSource: "local",
     enabled: activeFeature === "source" && canViewSource,
@@ -218,8 +236,29 @@ export default function AIConfigDetailPage() {
     setIsFaqAddModalOpen(true);
   };
 
+  const widgetApiBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://hau.telesip.vn/api/v1";
+
   const renderFeatureContent = () => {
     switch (activeFeature) {
+      case "integration":
+        return (
+          <div className="h-full min-w-0 w-full">
+            <CodeBlockWidgetChat
+              aiConfigId={aiconfigId}
+              apiBaseUrl={widgetApiBaseUrl}
+            />
+          </div>
+        );
+      case "chat":
+        return (
+          <div className="h-full min-w-0 w-full">
+            <ChatWithBotWidget
+              aiConfigId={aiconfigId}
+              apiBaseUrl={widgetApiBaseUrl}
+            />
+          </div>
+        );
       case "faqs":
         if (isAuthLoading) {
           return (
@@ -260,9 +299,7 @@ export default function AIConfigDetailPage() {
             <Icon className="mb-4 h-16 w-16 text-muted-foreground/50" />
             <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
             <p className="text-muted-foreground max-w-sm">
-              {activeFeature === "chat"
-                ? `Tính năng chat đang được phát triển. Bạn sẽ sớm có thể trò chuyện với ${config?.name || "Agent"} tại đây.`
-                : feature.description || "Tính năng đang được phát triển."}
+              {feature.description || "Tính năng đang được phát triển."}
             </p>
           </div>
         );
@@ -372,7 +409,7 @@ export default function AIConfigDetailPage() {
                     />
                   </div>
                 )
-              ) : (
+              ) : activeFeature === "faqs" ? (
                 <div className="flex min-h-[min(70vh,720px)] w-full">
                   <NavigationRailFilter
                     className="shrink-0 border-border min-h-[min(70vh,720px)]"
@@ -392,6 +429,10 @@ export default function AIConfigDetailPage() {
                   <div className="min-w-0 flex-1 overflow-hidden p-6">
                     {renderFeatureContent()}
                   </div>
+                </div>
+              ) : (
+                <div className="w-full overflow-auto p-6">
+                  {renderFeatureContent()}
                 </div>
               )}
             </div>

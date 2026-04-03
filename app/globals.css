@@ -218,3 +218,15 @@
     animation: blink 1.2s infinite;
   }
 }
+
+/*
+ * Widget chat nhúng (public/chatbot/chat-widget.js): host #chatbot-widget-host.
+ * Class do page AI config gắn theo activeFeature === "chat" (tức thì khi đổi tab,
+ * không chờ AnimatePresence). Rời tab → bỏ class → ẩn bubble (không gỡ script/DOM).
+ */
+body:not(.cw-ai-config-chat-tab-active) #chatbot-widget-host {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
