@@ -36,6 +36,7 @@ export const useScanNewDocuments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: STATUS_COUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PIPELINE_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({
         queryKey: DOCUMENTS_PAGINATED_QUERY_KEY,
       });
@@ -51,6 +52,28 @@ export const useUploadDocument = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: STATUS_COUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PIPELINE_STATUS_QUERY_KEY });
+      queryClient.invalidateQueries({
+        queryKey: DOCUMENTS_PAGINATED_QUERY_KEY,
+      });
+    },
+  });
+};
+
+export const useDeleteDocument = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (doc_ids: string[]) =>
+      documentsService.deleteDocument({
+        doc_ids: doc_ids,
+        delete_file: false,
+        delete_llm_cache: false,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: STATUS_COUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PIPELINE_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({
         queryKey: DOCUMENTS_PAGINATED_QUERY_KEY,
       });
@@ -66,6 +89,7 @@ export const useInsertText = () => {
       documentsService.insertText(params.file_source, params.text),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PIPELINE_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({
         queryKey: DOCUMENTS_PAGINATED_QUERY_KEY,
       });

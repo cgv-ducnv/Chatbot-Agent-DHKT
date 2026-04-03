@@ -77,6 +77,15 @@ function formatIso(iso: string | undefined) {
   }
 }
 
+function formatUnixTimestamp(seconds: number | null | undefined) {
+  if (seconds == null || Number.isNaN(seconds)) return "—";
+  try {
+    return new Date(seconds * 1000).toLocaleString("vi-VN");
+  } catch {
+    return String(seconds);
+  }
+}
+
 type FieldAccent =
   | "sky"
   | "violet"
@@ -325,9 +334,61 @@ export function DocumentDetailByTrack({
                         </div>
                       </FieldRow>
                       <FieldRow label="Siêu dữ liệu (metadata)" accent="violet">
-                        <pre className="max-h-64 overflow-auto rounded-lg border border-violet-200/40 bg-violet-50/30 p-3 text-xs dark:border-violet-900/40 dark:bg-violet-950/30">
-                          {JSON.stringify(doc.metadata ?? {}, null, 2)}
-                        </pre>
+                        <div className="space-y-3">
+                          {/* Summary Card */}
+                          <div className="rounded-xl border border-violet-200/40 bg-violet-50/60 dark:border-violet-900/40 dark:bg-violet-950/30">
+                            <div className="flex items-center justify-between border-b border-violet-200/40 px-3 py-2 dark:border-violet-900/40">
+                              <span className="text-sm font-semibold text-violet-900 dark:text-violet-100">
+                                Thông tin xử lý
+                              </span>
+
+                              {doc.metadata?.processing_end_time ? (
+                                <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+                                  Hoàn thành
+                                </span>
+                              ) : (
+                                <span className="rounded-md bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600">
+                                  Đang xử lý
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid gap-2 p-3 text-sm">
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">
+                                  Bắt đầu xử lý
+                                </span>
+                                <span className="font-medium">
+                                  {formatUnixTimestamp(
+                                    doc.metadata?.processing_start_time,
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">
+                                  Kết thúc xử lý
+                                </span>
+                                <span className="font-medium">
+                                  {formatUnixTimestamp(
+                                    doc.metadata?.processing_end_time,
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* JSON Toggle */}
+                          <details className="group rounded-lg border border-violet-200/40 bg-violet-50/30 dark:border-violet-900/40 dark:bg-violet-950/30">
+                            <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-violet-800 dark:text-violet-200">
+                              Xem dữ liệu thô (JSON)
+                            </summary>
+
+                            <pre className="max-h-64 overflow-auto border-t border-violet-200/40 p-3 text-xs dark:border-violet-900/40">
+                              {JSON.stringify(doc.metadata ?? {}, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
                       </FieldRow>
                     </dl>
                   </article>

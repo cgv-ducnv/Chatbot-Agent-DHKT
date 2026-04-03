@@ -133,7 +133,15 @@ export const documentsService = {
    * @param file - File cần upload
    */
   uploadDocument: async (file: File) => {
-    const response = await apiClient.post("/documents/upload", { file });
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiClient.post("/documents/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
     return response.data;
   },
 
@@ -259,29 +267,23 @@ export const documentsService = {
     if (!ids.length) {
       throw new Error("doc_ids không được rỗng");
     }
-    const response = await apiClient.delete(
-      `/documents/delete_document/${encodeURIComponent(ids[0])}`,
-      {
-        data: {
-          doc_ids: ids,
-          delete_file: payload.delete_file,
-          delete_llm_cache: payload.delete_llm_cache,
-        },
+    const response = await apiClient.delete(`/documents/delete_document`, {
+      data: {
+        doc_ids: ids,
+        delete_file: payload.delete_file,
+        delete_llm_cache: payload.delete_llm_cache,
       },
-    );
+    });
     return response.data;
   },
 
-  deleteDocument: async (
-    document_id: string,
-    data: {
-      doc_ids: string[];
-      delete_file: boolean;
-      delete_llm_cache: boolean;
-    },
-  ) => {
+  deleteDocument: async (data: {
+    doc_ids: string[];
+    delete_file: boolean;
+    delete_llm_cache: boolean;
+  }) => {
     return documentsService.deleteDocumentsBatch({
-      doc_ids: data.doc_ids.length ? data.doc_ids : [document_id],
+      doc_ids: data.doc_ids,
       delete_file: data.delete_file,
       delete_llm_cache: data.delete_llm_cache,
     });

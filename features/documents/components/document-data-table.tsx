@@ -11,13 +11,22 @@ import {
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
+  type RowSelectionState,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, Copy, Eye } from "lucide-react";
+import {
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  Eye,
+  Loader2,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -40,7 +49,10 @@ import { EmptyData } from "@/components/empty-data";
 import { IconMoodEmpty } from "@tabler/icons-react";
 import { toast } from "sonner";
 import type { DocumentsPaginationMeta } from "../utils/normalize-paginated";
-import { useTrackDocumentStatus } from "@/hooks/documents/use-documents";
+import {
+  useDeleteDocument,
+  useTrackDocumentStatus,
+} from "@/hooks/documents/use-documents";
 import { DocumentDetailByTrack } from "./document-detail-by-track";
 
 interface DocumentDataTableProps {
@@ -93,6 +105,7 @@ export function DocumentDataTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   useEffect(() => {
     if (sortBy && sortOrder) {
@@ -121,6 +134,31 @@ export function DocumentDataTable({
   };
 
   const columns: ColumnDef<DocumentItem>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) =>
+            table.toggleAllPageRowsSelected(Boolean(value))
+          }
+          aria-label="Chọn tất cả"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+          aria-label="Chọn dòng"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 40,
+    },
     {
       accessorKey: "track_id",
       header: "Track ID",
@@ -245,10 +283,14 @@ export function DocumentDataTable({
       sorting,
       columnVisibility,
       columnFilters,
+      rowSelection,
     },
     onSortingChange: handleSortingChange,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row) => row.track_id,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -257,16 +299,74 @@ export function DocumentDataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  const selectedDocIds = table
+    .getSelectedRowModel()
+    .rows.map((r) => r.original.id);
+
+  const deleteDocument = useDeleteDocument();
+
+  const handleDeleteDocument = async () => {
+    if (!selectedDocIds.length) return;
+    try {
+      const res = await deleteDocument.mutateAsync(selectedDocIds);
+      if (res.status === "deletion_started") {
+        toast.success(res.message || "Đang xóa tài liệu...");
+      } else {
+        toast.error(res.message || "Xóa tài liệu thất bại");
+      }
+      table.resetRowSelection();
+    } catch {
+      toast.error("Xóa tài liệu thất bại");
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <DocumentDataTableToolbar />
-      <div className="rounded-md border">
+    <div className="flex flex-col gap-6 p-1">
+      {/* Header Section: Toolbar & Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex-1 min-w-[300px]">
+          <DocumentDataTableToolbar />
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Hiển thị số lượng đã chọn để tăng UX */}
+          {selectedDocIds.length > 0 && (
+            <span className="text-sm text-muted-foreground mr-2 animate-in fade-in">
+              Đã chọn <strong>{selectedDocIds.length}</strong>
+            </span>
+          )}
+
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={selectedDocIds.length === 0 || deleteDocument.isPending}
+            onClick={() => void handleDeleteDocument()}
+            className="transition-all duration-200"
+          >
+            {deleteDocument.isPending ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Đang xóa...
+              </span>
+            ) : (
+              "Xóa tài liệu"
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
+                  <TableHead
+                    key={header.id}
+                    className="font-semibold text-foreground"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -278,22 +378,27 @@ export function DocumentDataTable({
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
                   {columns.map((_, cellIndex) => (
                     <TableCell key={cellIndex}>
-                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full opacity-60" />
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="group transition-colors"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-3">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -304,17 +409,12 @@ export function DocumentDataTable({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-[400px]">
                   <EmptyData
                     icon={IconMoodEmpty}
                     title="Chưa có tài liệu."
-                    description="Thử đổi bộ lọc trạng thái hoặc upload tài liệu."
+                    description="Thử đổi bộ lọc trạng thái hoặc upload tài liệu để bắt đầu."
                     showButton={false}
-                    buttonText=""
-                    onButtonClick={() => {}}
                   />
                 </TableCell>
               </TableRow>
@@ -323,6 +423,19 @@ export function DocumentDataTable({
         </Table>
       </div>
 
+      {/* Footer Section: Pagination */}
+      <div className="pt-2 border-t border-dashed">
+        <DocumentDataTablePagination
+          table={table}
+          pagination={pagination}
+          currentPage={page ?? 1}
+          currentPageSize={pageSize ?? 10}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      </div>
+
+      {/* Modals/Drawers */}
       <DocumentDetailByTrack
         open={detailOpen}
         onOpenChange={(next) => {
@@ -333,14 +446,6 @@ export function DocumentDataTable({
         trackStatus={trackStatusPayload}
         isLoading={isTrackStatusLoading}
         isFetching={isTrackStatusFetching}
-      />
-      <DocumentDataTablePagination
-        table={table}
-        pagination={pagination}
-        currentPage={page ?? 1}
-        currentPageSize={pageSize ?? 10}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
       />
     </div>
   );
