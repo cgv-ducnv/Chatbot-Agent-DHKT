@@ -3,7 +3,7 @@
 import { AppBreadcrumb } from "@/components/breadcrumb";
 import { AIConfigDetailCard } from "@/features/sources/components/ai-config-detail-card";
 import { useAIConfig } from "@/hooks/ai-configs/services";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 import { toast } from "sonner";
 import { FAQsDataTableList } from "@/features/faqs/components/faqs-data-table-list";
@@ -18,7 +18,7 @@ import type { FAQ } from "@/features/faqs/utils/schema";
 import { useQueryParam, NumberParam, withDefault } from "use-query-params";
 import { PERMISSIONS } from "@/constants/permission";
 import { EmptyData } from "@/components/empty-data";
-
+import { AIConfigFormDialog } from "@/features/ai-configs/components/ai-configs-form-modal";
 import {
   Dialog,
   DialogContent,
@@ -88,7 +88,6 @@ const faqsColumnOptions: ColumnOption[] = [
 
 export default function AIConfigDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const aiconfigId = Number(params.aiconfigId);
 
   const { data, isLoading, error } = useAIConfig(aiconfigId);
@@ -152,9 +151,19 @@ export default function AIConfigDetailPage() {
       }
     : undefined;
 
-  const handleEdit = (config: AIConfig) => {
-    toast.info(`Chỉnh sửa cấu hình: ${config.name}`);
-    router.push(`/ai-configs?edit=${config.id}`);
+  const [isEditAIConfigOpen, setIsEditAIConfigOpen] = useState(false);
+  const [aiConfigForEdit, setAiConfigForEdit] = useState<AIConfig | null>(
+    null,
+  );
+
+  const handleEdit = (cfg: AIConfig) => {
+    setAiConfigForEdit(cfg);
+    setIsEditAIConfigOpen(true);
+  };
+
+  const handleEditAIConfigOpenChange = (open: boolean) => {
+    setIsEditAIConfigOpen(open);
+    if (!open) setAiConfigForEdit(null);
   };
 
   // State for feature tabs
@@ -350,8 +359,8 @@ export default function AIConfigDetailPage() {
 
       {/* Main Content - 50-50 Layout */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
-        {/* Left: Detail Card (50%) */}
-        <div className="flex-1">
+        {/* Left: Detail Card (50%) — flex column + min-h-0 để con dùng h-full đúng */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <AIConfigDetailCard
             config={config}
             isLoading={isLoading}
@@ -360,7 +369,7 @@ export default function AIConfigDetailPage() {
         </div>
 
         {/* Right: Feature Tabs (50%) */}
-        <div className="flex-1 h-full">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <AIConfigFeatureTab
             activeFeature={activeFeature}
             onFeatureChange={setActiveFeature}
@@ -483,6 +492,12 @@ export default function AIConfigDetailPage() {
         open={isFaqAddModalOpen}
         onOpenChange={setIsFaqAddModalOpen}
         aiConfigId={aiconfigId}
+      />
+
+      <AIConfigFormDialog
+        config={aiConfigForEdit}
+        open={isEditAIConfigOpen}
+        onOpenChange={handleEditAIConfigOpenChange}
       />
     </div>
   );

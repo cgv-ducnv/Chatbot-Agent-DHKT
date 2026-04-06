@@ -1,6 +1,7 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import {
   IconMessageChatbot,
   IconCode,
@@ -55,49 +56,75 @@ export function AIConfigFeatureTab({
   onFeatureChange,
 }: AIConfigFeatureTabProps) {
   return (
-    <div className="space-y-4 h-full">
-      <h2 className="text-lg font-semibold">Tính năng</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {AI_CONFIG_FEATURES.map((feature, index) => (
-          <motion.div
-            key={feature.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card
-              className={`cursor-pointer h-full border hover:border-primary/60 transition-all shadow-none ${
-                activeFeature === feature.id
-                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                  : "border-border hover:bg-muted/30"
-              }`}
-              onClick={() => {
-                onFeatureChange(
-                  activeFeature === feature.id ? null : feature.id,
-                );
-              }}
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden shadow-sm">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg">
+              <DotLottieReact
+                src="/Artificial-Intelligence-Chatbot.lottie"
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="truncate text-lg">
+                Danh sách tính năng
+              </CardTitle>
+              <p className="truncate text-sm text-muted-foreground">
+                Chọn tính năng phù hợp với yêu cầu của bạn
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col min-h-0 pt-0">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:content-start sm:auto-rows-fr">
+          {AI_CONFIG_FEATURES.map((feature, index) => (
+            <motion.div
+              key={feature.id}
+              className="flex min-h-0 min-w-0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${feature.bgColor} ${feature.color}`}
-                  >
-                    <feature.icon className="size-5" />
+              <Card
+                className={`flex h-full min-h-0 w-full cursor-pointer flex-col border transition-all shadow-none hover:border-primary/60 ${
+                  activeFeature === feature.id
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border hover:bg-muted/30"
+                }`}
+                onClick={() => {
+                  onFeatureChange(
+                    activeFeature === feature.id ? null : feature.id,
+                  );
+                }}
+              >
+                <CardContent className="flex flex-1 items-center justify-between gap-2 p-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div
+                      className={`shrink-0 rounded-lg p-2 ${feature.bgColor} ${feature.color}`}
+                    >
+                      <feature.icon className="size-5" />
+                    </div>
+                    <span className="truncate text-sm font-medium transition-colors group-hover:text-primary">
+                      {feature.title}
+                    </span>
                   </div>
-                  <span className="font-medium text-sm group-hover:text-primary transition-colors">
-                    {feature.title}
-                  </span>
-                </div>
-                <ChevronRight
-                  className={`size-4 text-muted-foreground/50 transition-transform duration-300 ${
-                    activeFeature === feature.id ? "rotate-90 text-primary" : ""
-                  }`}
-                />
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-    </div>
+                  <ChevronRight
+                    className={`size-4 shrink-0 text-muted-foreground/50 transition-transform duration-300 ${
+                      activeFeature === feature.id
+                        ? "rotate-90 text-primary"
+                        : ""
+                    }`}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

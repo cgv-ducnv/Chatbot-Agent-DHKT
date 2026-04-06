@@ -34,8 +34,8 @@ export function AIConfigDetailCard({
 
   if (!config) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
+      <Card className="flex h-full min-h-0 flex-col">
+        <CardContent className="flex flex-1 items-center justify-center py-8">
           <p className="text-sm text-muted-foreground">
             Không tìm thấy thông tin cấu hình AI
           </p>
@@ -49,7 +49,7 @@ export function AIConfigDetailCard({
   );
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Compact Header */}
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
@@ -141,7 +141,7 @@ export function AIConfigDetailCard({
 
 function AIConfigDetailCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

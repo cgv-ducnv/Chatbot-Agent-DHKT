@@ -45,7 +45,7 @@ import { removeEmptyFields } from "@/utils/remove-field-empty";
 import { MODEL_OPTIONS } from "@/constants/model-ai";
 import { LANGUAGE_OPTIONS } from "@/constants/language";
 import ReactCountryFlag from "react-country-flag";
-import { convertDateTime } from "@/utils/convert-time";
+import { toast } from "sonner";
 
 interface AIConfigFormDialogProps {
   config?: AIConfig | null;
@@ -101,15 +101,27 @@ export function AIConfigFormDialog({
       updateConfigMutation.mutate(
         { id: config.id, data: payload as any },
         {
-          onSuccess: () => {
-            form.reset();
-            setOpen(false);
+          onSuccess: (response) => {
+            if (response.status_code === 200) {
+              toast.success(response.message || "Cập nhật cấu hình thành công");
+              form.reset();
+              setOpen(false);
+            } else {
+              toast.error(response?.message || "Cập nhật cấu hình thất bại");
+            }
           },
         },
       );
     } else {
       createConfigMutation.mutate(payload as any, {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          if (response.status_code === 200) {
+            toast.success(response.message || "Tạo cấu hình thành công");
+            form.reset();
+            setOpen(false);
+          } else {
+            toast.error(response?.message || "Tạo cấu hình thất bại");
+          }
           form.reset();
           setOpen(false);
         },
@@ -128,20 +140,20 @@ export function AIConfigFormDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-h-[min(90vh,640px)] gap-3 overflow-y-auto p-4 sm:p-5">
+        <DialogHeader className="space-y-1 pb-3 text-left">
+          <DialogTitle className="text-base">
             {isEditMode ? "Sửa thông tin agent" : "Thêm mới agent"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             {isEditMode
               ? "Cập nhật thông tin agent. Nhấn lưu khi hoàn tất."
               : "Tạo agent mới. Nhấn lưu khi hoàn tất."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid grid-cols-1 gap-3">
               <FormField
                 control={form.control}
                 name="name"
@@ -162,7 +174,12 @@ export function AIConfigFormDialog({
                   <FormItem>
                     <FormLabel>Mô tả</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Nhập mô tả" {...field} />
+                      <Textarea
+                        placeholder="Nhập mô tả"
+                        rows={2}
+                        className="min-h-0 resize-y"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -170,7 +187,7 @@ export function AIConfigFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="model_name"
@@ -248,7 +265,8 @@ export function AIConfigFormDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Nhập prompt hệ thống"
-                      className="min-h-[150px] max-h-[300px] overflow-y-auto"
+                      rows={5}
+                      className="min-h-[100px] max-h-[200px] resize-y overflow-y-auto"
                       {...field}
                     />
                   </FormControl>
@@ -257,9 +275,10 @@ export function AIConfigFormDialog({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 pt-2 sm:justify-end">
               <Button
                 type="submit"
+                size="sm"
                 className="cursor-pointer"
                 disabled={
                   isEditMode
