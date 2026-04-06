@@ -39,12 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { DocumentItem } from "@/services/documents/services";
 import { DocumentDataTablePagination } from "./document-data-table-pagination";
 import { DocumentDataTableToolbar } from "./document-data-table-toolbar";
-import {
-  useQueryParam,
-  NumberParam,
-  StringParam,
-  withDefault,
-} from "use-query-params";
+import { useQueryParam, StringParam } from "use-query-params";
 import { EmptyData } from "@/components/empty-data";
 import { IconMoodEmpty } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -59,6 +54,11 @@ interface DocumentDataTableProps {
   documents: DocumentItem[];
   pagination?: DocumentsPaginationMeta;
   isLoading?: boolean;
+  /** Đồng bộ với useDocumentsDashboardController → documentPaginated */
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number | null | undefined) => void;
+  onPageSizeChange: (pageSize: number | null | undefined) => void;
 }
 
 function statusBadgeClass(status: string) {
@@ -75,6 +75,10 @@ export function DocumentDataTable({
   documents,
   pagination,
   isLoading,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
 }: DocumentDataTableProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -94,11 +98,6 @@ export function DocumentDataTable({
         }
       : null;
 
-  const [page, setPage] = useQueryParam("page", withDefault(NumberParam, 1));
-  const [pageSize, setPageSize] = useQueryParam(
-    "page_size",
-    withDefault(NumberParam, 10),
-  );
   const [sortBy, setSortBy] = useQueryParam("sort_by", StringParam);
   const [sortOrder, setSortOrder] = useQueryParam("sort_order", StringParam);
 
@@ -428,10 +427,10 @@ export function DocumentDataTable({
         <DocumentDataTablePagination
           table={table}
           pagination={pagination}
-          currentPage={page ?? 1}
-          currentPageSize={pageSize ?? 10}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
+          currentPage={page}
+          currentPageSize={pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
 

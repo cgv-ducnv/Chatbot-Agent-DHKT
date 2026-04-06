@@ -94,9 +94,6 @@ export function ChatWithBotWidget({
             </CardDescription>
           </div>
         </div>
-        <p className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          <span>Gợi ý FAQ tối đa 6 mục</span>
-        </p>
       </CardHeader>
       <CardContent className="space-y-3 border-t border-border/60 bg-muted/20 px-6 pt-5 pb-6">
         <p className="text-foreground/90 text-xs font-medium uppercase tracking-wide">

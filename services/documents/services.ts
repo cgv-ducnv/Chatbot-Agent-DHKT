@@ -324,12 +324,16 @@ export const documentsService = {
       | "processed"
       | "failed",
   ) => {
+    const statusFilterLower = status_filter
+      ? (status_filter.toLowerCase() as typeof status_filter)
+      : undefined;
+
     const body = {
       page,
       page_size,
       sort_direction,
-      sort_field,
-      ...(status_filter ? { status_filter } : {}),
+      sort_field: sort_field.trim().toLowerCase(),
+      ...(statusFilterLower ? { status_filter: statusFilterLower } : {}),
     };
     const response = await apiClient.post("/documents/paginated", body);
     return response.data;

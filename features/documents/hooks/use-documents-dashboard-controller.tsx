@@ -14,7 +14,7 @@ import {
   withDefault,
 } from "use-query-params";
 import { useMemo, useState, useCallback } from "react";
-import { Clock, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
+import { Clock } from "lucide-react";
 
 export const DOCUMENTS_STATUS_OPTIONS: FilterOption[] = [
   { value: "all", label: "Tất cả" },
@@ -25,22 +25,33 @@ export const DOCUMENTS_STATUS_OPTIONS: FilterOption[] = [
   { value: "failed", label: "Lỗi" },
 ];
 
+/** Khớp body POST /documents/paginated: sort_field + sort_direction (không sort theo status — API không dùng trong ví dụ chuẩn). */
 const SORT_PRESET_MAP = {
+  updated_at_desc: { sort_by: "updated_at", sort_order: "desc" as const },
+  updated_at_asc: { sort_by: "updated_at", sort_order: "asc" as const },
   created_at_desc: { sort_by: "created_at", sort_order: "desc" as const },
   created_at_asc: { sort_by: "created_at", sort_order: "asc" as const },
-  status_desc: { sort_by: "status", sort_order: "desc" as const },
-  status_asc: { sort_by: "status", sort_order: "asc" as const },
 } as const;
 
 export const DOCUMENTS_SORT_OPTIONS: FilterOption[] = [
   {
+    value: "updated_at_desc",
+    label: "Cập nhật mới nhất",
+    icon: <Clock className="size-4" />,
+  },
+  {
+    value: "updated_at_asc",
+    label: "Cập nhật cũ nhất",
+    icon: <Clock className="size-4" />,
+  },
+  {
     value: "created_at_desc",
-    label: "Mới nhất",
+    label: "Tạo mới nhất",
     icon: <Clock className="size-4" />,
   },
   {
     value: "created_at_asc",
-    label: "Cũ nhất",
+    label: "Tạo cũ nhất",
     icon: <Clock className="size-4" />,
   },
 ];
@@ -61,17 +72,17 @@ function parseStatusChoice(s: string | null | undefined): StatusFilterChoice {
   if (normalized && (VALID_STATUS as readonly string[]).includes(normalized)) {
     return normalized as Exclude<StatusFilterChoice, "all">;
   }
-  return "pending";
+  return "all";
 }
 
 export function presetFromSort(
   sortBy: string | null | undefined,
   sortOrder: string | null | undefined,
-): keyof typeof SORT_PRESET_MAP | undefined {
-  if (!sortBy || !sortOrder) return "created_at_desc";
+): keyof typeof SORT_PRESET_MAP {
+  if (!sortBy || !sortOrder) return "updated_at_desc";
   const key = `${sortBy}_${sortOrder}` as keyof typeof SORT_PRESET_MAP;
   if (key in SORT_PRESET_MAP) return key;
-  return undefined;
+  return "updated_at_desc";
 }
 
 export type DocumentsLocalQuery = {
@@ -85,8 +96,8 @@ export type DocumentsLocalQuery = {
 
 const DEFAULT_LOCAL_QUERY: DocumentsLocalQuery = {
   page: 1,
-  page_size: 10,
-  sort_by: "created_at",
+  page_size: 50,
+  sort_by: "updated_at",
   sort_order: "desc",
   mode: "list",
   status_filter: "all",
@@ -101,8 +112,8 @@ export function useDocumentsDashboardController({
 }) {
   const [urlQuery, setUrlQuery] = useQueryParams({
     page: withDefault(NumberParam, 1),
-    page_size: withDefault(NumberParam, 10),
-    sort_by: withDefault(StringParam, "created_at"),
+    page_size: withDefault(NumberParam, 50),
+    sort_by: withDefault(StringParam, "updated_at"),
     sort_order: withDefault(StringParam, "desc"),
     mode: withDefault(StringParam, "list"),
     status_filter: withDefault(StringParam, "all"),
@@ -116,7 +127,7 @@ export function useDocumentsDashboardController({
       return {
         page: urlQuery.page,
         page_size: urlQuery.page_size,
-        sort_by: urlQuery.sort_by?.trim() || "created_at",
+        sort_by: urlQuery.sort_by?.trim() || "updated_at",
         sort_order: urlQuery.sort_order === "asc" ? "asc" : "desc",
         mode: urlQuery.mode === "kanban" ? "kanban" : "list",
         status_filter: urlQuery.status_filter || "all",
@@ -148,7 +159,7 @@ export function useDocumentsDashboardController({
     statusFilterChoice === "all" || isKanbanMode
       ? undefined
       : statusFilterChoice;
-  const sortField = query.sort_by?.trim() || "created_at";
+  const sortField = query.sort_by?.trim() || "updated_at";
   const sortDirection = query.sort_order;
 
   const paginatedParams = useMemo(
@@ -177,7 +188,7 @@ export function useDocumentsDashboardController({
     (value: string) => {
       const preset =
         SORT_PRESET_MAP[value as keyof typeof SORT_PRESET_MAP] ??
-        SORT_PRESET_MAP.created_at_desc;
+        SORT_PRESET_MAP.updated_at_desc;
       patchQuery({
         sort_by: preset.sort_by,
         sort_order: preset.sort_order,
@@ -196,11 +207,8 @@ export function useDocumentsDashboardController({
 
   const handleClearFilters = useCallback(() => {
     patchQuery({
+      ...DEFAULT_LOCAL_QUERY,
       page: 1,
-      page_size: 10,
-      sort_by: "created_at",
-      sort_order: "desc",
-      status_filter: "pending",
     });
   }, [patchQuery]);
 

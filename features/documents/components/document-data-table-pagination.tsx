@@ -36,7 +36,7 @@ export function DocumentDataTablePagination<TData>({
   table,
   pagination,
   currentPage = 1,
-  currentPageSize = 10,
+  currentPageSize = 50,
   onPageChange,
   onPageSizeChange,
 }: DocumentDataTablePaginationProps<TData>) {

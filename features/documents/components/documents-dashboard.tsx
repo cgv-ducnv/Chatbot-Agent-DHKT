@@ -33,7 +33,8 @@ export function DocumentsDashboardContent({
   showBreadcrumb?: boolean;
   className?: string;
 }) {
-  const { documents, pagination, isLoading, isKanbanMode } = controller;
+  const { documents, pagination, isLoading, isKanbanMode, query, patchQuery } =
+    controller;
 
   return (
     <div
@@ -72,6 +73,17 @@ export function DocumentsDashboardContent({
             documents={documents}
             pagination={pagination}
             isLoading={isLoading}
+            page={query.page}
+            pageSize={query.page_size}
+            onPageChange={(p) =>
+              patchQuery({ page: p != null && p > 0 ? p : 1 })
+            }
+            onPageSizeChange={(size) =>
+              patchQuery({
+                page_size: size != null && size > 0 ? size : query.page_size,
+                page: 1,
+              })
+            }
           />
         )}
       </div>

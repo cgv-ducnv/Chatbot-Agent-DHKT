@@ -316,6 +316,8 @@ export type NavigationRailFilterProps = {
   searchPlaceholder?: string;
   onSearchChange?: (value: string) => void;
   searchDebounceMs?: number;
+  /** Ẩn ô tìm kiếm khi API không hỗ trợ (vd. `documents/paginated`). Mặc định: hiện khi có `onSearchChange`. */
+  showSearch?: boolean;
   selectLabel?: string;
   selectPlaceholder?: string;
   selectOptions?: FilterOption[];
@@ -434,7 +436,10 @@ export function NavigationRailFilter({
   kanbanTotal = 0,
   onKanbanPageChange,
   onKanbanPageSizeChange,
+  showSearch,
 }: NavigationRailFilterProps) {
+  const showSearchSection = showSearch ?? !!onSearchChange;
+
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [searchValue, setSearchValue] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -573,7 +578,7 @@ export function NavigationRailFilter({
   }, [onClearAll]);
 
   const hasActiveFilters = !!(
-    searchValue ||
+    (showSearchSection && searchValue) ||
     selectValue ||
     select2Value ||
     comboboxValues.length > 0 ||
@@ -581,7 +586,7 @@ export function NavigationRailFilter({
   );
 
   const totalActiveFilters = [
-    searchValue ? 1 : 0,
+    showSearchSection && searchValue ? 1 : 0,
     selectValue ? 1 : 0,
     select2Value ? 1 : 0,
     comboboxValues.length,
@@ -726,17 +731,19 @@ export function NavigationRailFilter({
                 )}
               />
 
-              {/* Search */}
-              <DockItem
-                onClick={() => handleClickFocus("search")}
-                isActive={!!searchValue}
-                badge={searchValue ? 1 : undefined}
-              >
-                <DockLabel>Tìm kiếm</DockLabel>
-                <DockIcon>
-                  {searchIcon || <Search className="size-full" />}
-                </DockIcon>
-              </DockItem>
+              {/* Search — chỉ khi API / màn hình có hỗ trợ tìm kiếm */}
+              {showSearchSection && (
+                <DockItem
+                  onClick={() => handleClickFocus("search")}
+                  isActive={!!searchValue}
+                  badge={searchValue ? 1 : undefined}
+                >
+                  <DockLabel>Tìm kiếm</DockLabel>
+                  <DockIcon>
+                    {searchIcon || <Search className="size-full" />}
+                  </DockIcon>
+                </DockItem>
+              )}
 
               {/* Select */}
               {selectOptions.length > 0 && (
@@ -930,39 +937,41 @@ export function NavigationRailFilter({
                 }}
               >
                 {/* Search Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    {renderLabelIcon(searchIcon, "search")}
-                    Tìm kiếm
-                  </label>
-                  <div className="relative">
-                    <Input
-                      ref={searchInputRef}
-                      placeholder={searchPlaceholder}
-                      value={searchValue}
-                      onChange={handleSearchChange}
-                      className="h-10 bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20 pr-8"
-                    />
-                    {searchValue && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSearchValue("");
-                          onSearchChange?.("");
-                        }}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
-                      >
-                        <X className="size-3" />
-                      </Button>
-                    )}
+                {showSearchSection && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                      {renderLabelIcon(searchIcon, "search")}
+                      Tìm kiếm
+                    </label>
+                    <div className="relative">
+                      <Input
+                        ref={searchInputRef}
+                        placeholder={searchPlaceholder}
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        className="h-10 bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20 pr-8"
+                      />
+                      {searchValue && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSearchValue("");
+                            onSearchChange?.("");
+                          }}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
+                        >
+                          <X className="size-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Select Option */}
                 {selectOptions.length > 0 && (
                   <>
-                    <Separator />
+                    {showSearchSection && <Separator />}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
                         {renderLabelIcon(selectIcon, "select")}
