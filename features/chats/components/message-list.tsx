@@ -32,6 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "../utils/types";
 import { MessageAttachment } from "./message-attachment";
+import { formatMessageTime } from "@/utils/format-message-time";
 import { Link } from "lucide-react";
 
 export interface MessageListProps {
@@ -335,19 +336,6 @@ export function MessageList({
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isTyping]);
-
-  const formatMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    if (isToday(date)) {
-      return format(date, "hh:mm a");
-    } else if (isYesterday(date)) {
-      return `Hôm qua, ${format(date, "hh:mm a")}`;
-    } else if (date.getFullYear() === new Date().getFullYear()) {
-      return format(date, "dd/MM, hh:mm a");
-    } else {
-      return format(date, "dd/MM/yyyy, hh:mm a");
-    }
-  };
 
   // Generate senderKey from message
   const getSenderKey = (message: ChatMessage) => {
